@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stock Camion">
+<meta name="theme-color" content="#0a0a10">
+<title>Stock Camion — Weishaupt</title>
+
+<!-- ══════════════════════════════════════════════════
+     CONFIGURATION SUPABASE
+     Remplacez ces deux valeurs par les vôtres
+     (voir guide d'installation ci-dessous)
+     ══════════════════════════════════════════════════ -->
+<script>
+  const SUPABASE_URL = 'https://eplvxpprmriuzoarfhak.supabase.co';      // ex: https://xxxx.supabase.co
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwbHZ4cHBybXJpdXpvYXJmaGFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODMyNTksImV4cCI6MjA5MDk1OTI1OX0.-W3slGTaqkSTbv90KlrypZUE5bCNAA5bbGDJ2RSpm_U'; // ex: eyJhbGci...
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg:     #0a0a10;
+  --bg2:    #0f0f18;
+  --card:   #14141f;
+  --card2:  #1a1a28;
+  --card3:  #1f1f32;
+  --acc:    #e8401c;
+  --acc2:   #ff6b45;
+  --acc3:   rgba(232,64,28,0.12);
+  --txt:    #f0f0fa;
+  --txt2:   #6b6b99;
+  --txt3:   #3a3a55;
+  --ok:     #2ecc71;
+  --warn:   #f39c12;
+  --danger: #e74c3c;
+  --border: rgba(255,255,255,0.06);
+  --border2:rgba(255,255,255,0.10);
+  --border-acc: rgba(232,64,28,0.3);
+  --r:  14px;
+  --r2:  9px;
+  --r3:  6px;
+  --sh: 0 8px 32px rgba(0,0,0,0.6);
+  --sh-acc: 0 4px 20px rgba(232,64,28,0.4);
+  --sh-sm: 0 2px 10px rgba(0,0,0,0.4);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html { height:-webkit-fill-available; }
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--txt);
+  min-height:100vh;
+  min-height:-webkit-fill-available;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── NOISE TEXTURE OVERLAY ── */
+body::before {
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  opacity:0.4;
+}
+
+/* ── ACCENT GLOW BG ── */
+body::after {
+  content:'';
+  position:fixed; top:-200px; right:-150px; width:500px; height:500px;
+  background:radial-gradient(circle, rgba(232,64,28,0.08) 0%, transparent 70%);
+  pointer-events:none; z-index:0;
+}
+
+/* ── HEADER ── */
+.hdr {
+  position:sticky; top:0; z-index:50;
+  background:linear-gradient(180deg, var(--bg) 60%, transparent);
+  padding:48px 18px 12px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.hdr-left { display:flex; align-items:center; gap:12px; }
+.logo {
+  width:38px; height:38px; border-radius:10px; flex-shrink:0;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Rajdhani',sans-serif; font-weight:700; font-size:18px;
+  box-shadow:var(--sh-acc); letter-spacing:0;
+}
+.hdr h1 {
+  font-family:'Rajdhani',sans-serif; font-size:21px; font-weight:700;
+  letter-spacing:.5px; line-height:1;
+}
+.hdr h1 span { color:var(--acc); }
+.hdr-right { display:flex; gap:7px; align-items:center; }
+.ico-btn {
+  width:36px; height:36px; border-radius:9px;
+  border:1px solid var(--border2);
+  background:var(--card); color:var(--txt2); font-size:16px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .18s;
+}
+.ico-btn:active { transform:scale(.88); }
+.ico-btn.act { background:var(--acc); color:#fff; border-color:var(--acc); }
+
+/* ── SYNC INDICATOR ── */
+.sync-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--ok); transition:all .3s;
+  flex-shrink:0;
+}
+.sync-dot.syncing { background:var(--warn); animation:pulse 1s infinite; }
+.sync-dot.error   { background:var(--danger); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── BOTTOM NAV ── */
+.bnav {
+  position:fixed; bottom:0; left:0; right:0; z-index:50;
+  background:var(--card);
+  border-top:1px solid var(--border);
+  display:flex;
+  padding-bottom:max(env(safe-area-inset-bottom),6px);
+  backdrop-filter:blur(20px);
+}
+.nitem {
+  flex:1; padding:9px 0 6px;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  cursor:pointer; color:var(--txt3);
+  font-size:10px; font-weight:500; letter-spacing:.5px; text-transform:uppercase;
+  transition:color .18s; position:relative;
+}
+.ni { font-size:20px; transition:transform .2s; }
+.nitem.active { color:var(--acc); }
+.nitem.active .ni { transform:scale(1.15); }
+.nitem.active::after {
+  content:''; position:absolute; top:0; left:50%; transform:translateX(-50%);
+  width:24px; height:2px; background:var(--acc); border-radius:0 0 3px 3px;
+}
+.nwrap { position:relative; display:inline-block; }
+.nbadge {
+  position:absolute; top:-5px; right:-7px;
+  background:var(--danger); color:#fff;
+  font-size:9px; font-weight:700; border-radius:10px;
+  padding:1px 5px; min-width:16px; text-align:center; display:none;
+}
+
+/* ── MAIN LAYOUT ── */
+.main { padding:0 15px 96px; position:relative; z-index:1; }
+.page { display:none; animation:fadeUp .22s ease; }
+.page.active { display:block; }
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(10px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ── SEARCH BAR ── */
+.sbar { position:relative; margin-bottom:14px; }
+.sbar input {
+  width:100%; padding:11px 14px 11px 40px;
+  background:var(--card); border:1px solid var(--border2);
+  border-radius:var(--r); color:var(--txt);
+  font-family:'DM Sans',sans-serif; font-size:15px;
+  outline:none; transition:border-color .2s;
+}
+.sbar input:focus { border-color:var(--border-acc); }
+.sbar input::placeholder { color:var(--txt3); }
+.sbar-ico { position:absolute; left:13px; top:50%; transform:translateY(-50%); font-size:15px; color:var(--txt3); }
+.sbar-clear {
+  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  background:none; border:none; color:var(--txt3); font-size:14px;
+  cursor:pointer; padding:4px 6px;
+}
+
+/* ── SECTION TITLE ── */
+.stitle {
+  font-family:'Rajdhani',sans-serif; font-size:11px; font-weight:600;
+  letter-spacing:1.8px; text-transform:uppercase; color:var(--txt2);
+  margin-bottom:12px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.abtn {
+  height:28px; padding:0 12px; border-radius:var(--r3);
+  background:linear-gradient(135deg,var(--acc),var(--acc2));
+  color:#fff; border:none;
+  font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600;
+  cursor:pointer; box-shadow:var(--sh-acc);
+  display:flex; align-items:center; gap:4px; transition:all .18s;
+}
+.abtn:active { transform:scale(.93); }
+
+/* ── STATS STRIP ── */
+.stats {
+  display:flex; gap:9px; margin-bottom:18px;
+  overflow-x:auto; padding-bottom:3px;
+}
+.stats::-webkit-scrollbar { display:none; }
+.scard {
+  flex-shrink:0; background:var(--card);
+  border:1px solid var(--border); border-radius:var(--r2);
+  padding:12px 16px; min-width:96px;
+}
+.scard .sv {
+  font-family:'Rajdhani',sans-serif; font-size:28px; font-weight:700; line-height:1;
+}
+.scard .sl { font-size:11px; color:var(--txt2); margin-top:3px; }
+.scard.d .sv { color:var(--danger); }
+.scard.w .sv { color:var(--warn); }
+.scard.o .sv { color:var(--ok); }
+
+/* ── COMPARTIMENT ── */
+.comp-list { display:flex; flex-direction:column; gap:10px; }
+.comp-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--r); overflow:hidden; transition:border-color .2s;
+}
+.comp-card.has-alert { border-color:rgba(231,76,60,0.3); }
+.comp-hdr {
+  padding:14px 15px; display:flex; align-items:center; gap:12px;
+  cursor:pointer; user-select:none;
+}
+.comp-ico { font-size:22px; }
+.comp-info { flex:1; }
+.comp-name { font-weight:600; font-size:15px; }
+.comp-meta { font-size:12px; color:var(--txt2); margin-top:2px; }
+.comp-chev { color:var(--txt3); font-size:11px; transition:transform .22s; }
+.comp-card.open .comp-chev { transform:rotate(180deg); }
+.cbadge {
+  padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600;
+  font-family:'Rajdhani',sans-serif; letter-spacing:.3px;
+}
+.cbadge.alert { background:rgba(231,76,60,0.12); color:var(--danger); }
+.cbadge.ok    { background:rgba(46,204,113,0.1);  color:var(--ok); }
+
+/* ── TIROIR ── */
+.tiroir-list  { border-top:1px solid var(--border); }
+.tiroir-row   { border-bottom:1px solid var(--border); }
+.tiroir-row:last-child { border-bottom:none; }
+.tiroir-hdr {
+  padding:10px 15px; display:flex; align-items:center; gap:9px;
+  cursor:pointer; background:rgba(0,0,0,0.2); user-select:none;
+}
+.tiroir-label  { flex:1; font-size:13px; font-weight:500; color:var(--txt2); }
+.tiroir-count  { font-size:11px; color:var(--txt3); }
+.tiroir-chev   { font-size:10px; color:var(--txt3); transition:transform .18s; }
+.tiroir-row.open .tiroir-chev { transform:rotate(180deg); }
+.tiroir-badge  {
+  font-size:10px; padding:2px 7px; border-radius:10px; font-weight:600;
+  background:rgba(231,76,60,0.12); color:var(--danger);
+}
+.tiroir-actions-bar {
+  padding:7px 15px; display:flex; gap:8px; justify-content:flex-end;
+  border-top:1px solid var(--border); background:rgba(0,0,0,0.15);
+}
+.tact-btn {
+  font-size:11px; color:var(--txt2);
+  background:none; border:none; cursor:pointer; padding:3px 8px;
+}
+.tact-btn.del { color:var(--danger); }
+
+/* ── ITEMS ── */
+.items-wrap { padding:0 0 4px; }
+.irow {
+  padding:10px 15px; display:flex; align-items:center; gap:10px;
+  border-bottom:1px solid var(--border); transition:background .12s;
+}
+.irow:last-child { border-bottom:none; }
+.irow:active { background:var(--card2); }
+.idot { width:7px; height:7px; border-radius:50%; flex-shrink:0; background:var(--ok); }
+.idot.w { background:var(--warn); }
+.idot.d { background:var(--danger); }
+.iinfo { flex:1; min-width:0; cursor:pointer; }
+.iname {
+  font-size:13px; font-weight:500;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.imeta { font-size:11px; color:var(--txt2); margin-top:2px; }
+.iqty-ctrl { display:flex; align-items:center; gap:6px; }
+.qbtn {
+  width:30px; height:30px; border-radius:8px; border:1px solid var(--border2);
+  background:var(--bg); color:var(--txt); font-size:17px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .14s; flex-shrink:0;
+}
+.qbtn:active { transform:scale(.82); }
+.qbtn.minus { border-color:rgba(231,76,60,0.25); color:var(--danger); }
+.qbtn.plus  { border-color:rgba(46,204,113,0.25); color:var(--ok); }
+.qdsp {
+  font-family:'Rajdhani',sans-serif; font-size:18px; font-weight:700;
+  min-width:24px; text-align:center;
+}
+.qdsp.d { color:var(--danger); }
+.qdsp.w { color:var(--warn); }
+.iacts { display:flex; gap:5px; }
+.iact {
+  width:28px; height:28px; border-radius:7px; border:none;
+  background:var(--bg); color:var(--txt2); font-size:13px;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  transition:all .14s;
+}
+.iact:active { transform:scale(.85); }
+.iact.del { color:var(--danger); }
+.add-item-row { padding:8px 15px; }
+.add-item-row button {
+  width:100%; padding:8px; border-radius:8px;
+  border:1px dashed var(--border2); background:transparent;
+  color:var(--txt3); font-size:12px; cursor:pointer; transition:all .18s;
+}
+.add-item-row button:active { background:var(--card2); }
+.add-tiroir-row { padding:9px 15px; border-top:1px solid var(--border); }
+.add-tiroir-row button {
+  width:100%; padding:7px; border-radius:7px;
+  border:1px dashed var(--border); background:transparent;
+  color:var(--txt3); font-size:12px; cursor:pointer;
+}
+.comp-actions {
+  border-top:1px solid var(--border);
+  padding:9px 15px; display:flex; gap:8px; justify-content:flex-end;
+}
+.cact-btn { font-size:12px; color:var(--txt2); background:none; border:none; cursor:pointer; padding:3px 7px; }
+.cact-btn.del { color:var(--danger); }
+
+/* ── SEARCH RESULTS ── */
+.sr-card {
+  background:var(--card); border-radius:var(--r2); border:1px solid var(--border);
+  padding:13px 15px; display:flex; align-items:center; gap:12px;
+  cursor:pointer; transition:border-color .18s;
+}
+.sr-card:active { border-color:var(--border-acc); }
+.sr-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; background:var(--ok); }
+.sr-dot.w { background:var(--warn); }
+.sr-dot.d { background:var(--danger); }
+.sr-info { flex:1; min-width:0; }
+.sr-name { font-size:14px; font-weight:500; }
+.sr-sub  { font-size:11px; color:var(--txt2); margin-top:3px; line-height:1.6; }
+.sr-qty  { font-family:'Rajdhani',sans-serif; font-size:22px; font-weight:700; text-align:right; }
+.sr-qty.d { color:var(--danger); }
+.sr-qty.w { color:var(--warn); }
+.search-results { display:flex; flex-direction:column; gap:8px; }
+
+/* ── ALERTS ── */
+.alert-card {
+  background:var(--card); border-radius:var(--r); border-left:3px solid var(--danger);
+  padding:14px 15px; margin-bottom:9px; display:flex; align-items:center; gap:13px;
+}
+.alert-card.w { border-left-color:var(--warn); }
+.aico  { font-size:20px; }
+.ainfo { flex:1; }
+.aname { font-weight:600; font-size:14px; }
+.adtl  { font-size:11px; color:var(--txt2); margin-top:3px; line-height:1.7; }
+.aqty  { font-family:'Rajdhani',sans-serif; font-size:24px; font-weight:700; color:var(--danger); }
+.alert-card.w .aqty { color:var(--warn); }
+
+/* ── HISTORIQUE / SWIPE ── */
+.h-wrapper {
+  position:relative; margin-bottom:7px;
+  border-radius:var(--r2); overflow:hidden;
+}
+.h-delete-bg {
+  position:absolute; inset:0; background:var(--danger);
+  display:flex; align-items:center; justify-content:flex-end;
+  padding-right:18px; border-radius:var(--r2);
+}
+.hitem {
+  position:relative; background:var(--card); border-radius:var(--r2);
+  padding:12px 14px; display:flex; align-items:center; gap:12px;
+  transition:transform .25s ease; touch-action:pan-y; user-select:none; cursor:pointer;
+}
+.hitem.swiping { transition:none; }
+.hico  { font-size:17px; flex-shrink:0; }
+.hinf  { flex:1; min-width:0; }
+.hname { font-size:13px; font-weight:500; }
+.hmeta { font-size:11px; color:var(--txt2); margin-top:2px; line-height:1.6; }
+.hdelta { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:17px; text-align:right; min-width:36px; }
+.hdelta.p { color:var(--ok); }
+.hdelta.m { color:var(--danger); }
+.ri-tag {
+  display:inline-block; background:rgba(232,64,28,0.12); color:var(--acc2);
+  border-radius:5px; padding:1px 8px; font-size:10px; font-weight:600;
+  margin-top:3px; letter-spacing:.3px;
+}
+.swipe-hint {
+  text-align:center; font-size:11px; color:var(--txt3); margin-bottom:10px;
+  display:flex; align-items:center; justify-content:center; gap:5px;
+}
+
+/* ── CLOUD / CONFIG ── */
+.ccloud {
+  background:var(--card); border-radius:var(--r); border:1px solid var(--border);
+  padding:18px; margin-bottom:13px;
+}
+.ccloud h3 { font-family:'Rajdhani',sans-serif; font-size:18px; font-weight:700; margin-bottom:8px; }
+.ccloud p  { font-size:13px; color:var(--txt2); line-height:1.7; margin-bottom:14px; }
+.pbtn {
+  width:100%; padding:13px; border-radius:var(--r);
+  background:linear-gradient(135deg,var(--acc),var(--acc2)); color:#fff;
+  font-family:'DM Sans',sans-serif; font-weight:600; font-size:14px;
+  border:none; cursor:pointer; box-shadow:var(--sh-acc);
+  display:flex; align-items:center; justify-content:center; gap:7px; transition:all .18s;
+}
+.pbtn:active { transform:scale(.97); }
+.sbtn {
+  width:100%; padding:13px; border-radius:var(--r);
+  background:transparent; color:var(--txt);
+  font-family:'DM Sans',sans-serif; font-weight:500; font-size:14px;
+  border:1px solid var(--border2); cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:7px; transition:all .18s;
+}
+.sbtn:active { background:var(--card2); }
+.stline  { font-size:12px; color:var(--txt2); text-align:center; margin-top:9px; }
+.stline.ok { color:var(--ok); }
+
+/* ── CONFIG SUPABASE PANEL ── */
+.config-panel {
+  background:linear-gradient(135deg,rgba(232,64,28,0.08),rgba(232,64,28,0.03));
+  border:1px solid var(--border-acc); border-radius:var(--r);
+  padding:20px; margin-bottom:16px;
+}
+.config-panel h3 { font-family:'Rajdhani',sans-serif; font-size:18px; margin-bottom:6px; color:var(--acc2); }
+.config-panel p  { font-size:12px; color:var(--txt2); line-height:1.7; margin-bottom:14px; }
+.config-status {
+  display:flex; align-items:center; gap:8px;
+  font-size:12px; color:var(--txt2); margin-top:10px;
+}
+
+/* ── MODAL ── */
+.moverlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.8);
+  backdrop-filter:blur(10px); z-index:200;
+  display:flex; align-items:flex-end; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity .22s;
+}
+.moverlay.open { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--card2); border-radius:22px 22px 0 0;
+  width:100%; max-width:520px;
+  padding:18px 18px max(env(safe-area-inset-bottom, 18px), 36px);
+  transform:translateY(100%);
+  transition:transform .32s cubic-bezier(.34,1.3,.64,1);
+  border-top:1px solid var(--border2);
+}
+.moverlay.open .modal { transform:translateY(0); }
+.mhandle { width:36px; height:4px; background:var(--border2); border-radius:2px; margin:0 auto 18px; }
+.modal h2 { font-family:'Rajdhani',sans-serif; font-size:20px; font-weight:700; margin-bottom:16px; }
+.fg { margin-bottom:13px; }
+.flbl {
+  font-size:11px; color:var(--txt2); font-weight:500; letter-spacing:.5px;
+  text-transform:uppercase; margin-bottom:5px; display:block;
+}
+.finput, .fsel {
+  width:100%; padding:11px 13px;
+  background:var(--bg); border:1px solid var(--border2);
+  border-radius:var(--r2); color:var(--txt);
+  font-family:'DM Sans',sans-serif; font-size:14px;
+  outline:none; transition:border-color .2s; -webkit-appearance:none;
+}
+.finput:focus, .fsel:focus { border-color:var(--border-acc); }
+.finput.err {
+  border-color:var(--acc) !important;
+  animation:pulse-border .4s ease;
+}
+@keyframes pulse-border {
+  0%   { box-shadow:0 0 0 0 rgba(232,64,28,.5); }
+  100% { box-shadow:0 0 0 6px rgba(232,64,28,0); }
+}
+.frow { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.macts { display:flex; gap:9px; margin-top:18px; }
+.macts .pbtn { flex:1; padding:12px; }
+.cancbtn {
+  padding:12px 16px; border-radius:var(--r);
+  border:1px solid var(--border2); background:transparent;
+  color:var(--txt2); font-size:14px; cursor:pointer; transition:all .18s;
+}
+.cancbtn:active { background:var(--card3); }
+.ri-banner {
+  background:rgba(232,64,28,0.08); border:1px solid var(--border-acc);
+  border-radius:var(--r2); padding:12px 14px; margin-bottom:14px;
+  font-size:12px; color:var(--txt2); line-height:1.7;
+}
+.ri-banner strong { color:var(--acc2); display:block; margin-bottom:3px; font-size:13px; }
+
+/* ── EMPTY STATES ── */
+.empty { text-align:center; padding:48px 18px; color:var(--txt3); }
+.empty .eico { font-size:48px; margin-bottom:12px; }
+.empty p { font-size:13px; line-height:1.7; }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; top:100px; left:50%; z-index:300;
+  transform:translateX(-50%) translateY(-10px);
+  background:var(--card3); border:1px solid var(--border2);
+  border-radius:100px; padding:9px 20px;
+  font-size:13px; font-weight:500; opacity:0;
+  transition:all .25s; white-space:nowrap; box-shadow:var(--sh);
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── LOADING ── */
+.loading-overlay {
+  position:fixed; inset:0; background:var(--bg); z-index:999;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+}
+.loading-overlay.hidden { display:none; }
+.spinner {
+  width:40px; height:40px; border-radius:50%;
+  border:3px solid var(--card2); border-top-color:var(--acc);
+  animation:spin .7s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-txt { font-family:'Rajdhani',sans-serif; font-size:16px; color:var(--txt2); }
+
+::-webkit-scrollbar { width:3px; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="logo" style="width:56px;height:56px;font-size:26px;margin-bottom:8px">W</div>
+  <div class="spinner"></div>
+  <div class="loading-txt" id="loadingTxt">Connexion à la base de données…</div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="logo">W</div>
+    <h1>Stock <span>Camion</span></h1>
+  </div>
+  <div class="hdr-right">
+    <div class="sync-dot" id="syncDot" title="Statut synchronisation"></div>
+    <div class="ico-btn" id="searchToggleBtn" onclick="toggleSearch()">🔍</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ══ PAGE STOCK ══ -->
+  <div class="page active" id="page-stock">
+    <div class="sbar" id="searchBar" style="display:none">
+      <span class="sbar-ico">🔍</span>
+      <input type="text" id="searchInput" placeholder="Nom, référence…" oninput="onSearch()">
+      <button class="sbar-clear" onclick="clearSearch()">✕</button>
+    </div>
+    <div id="searchResults" style="display:none">
+      <div class="stitle">Résultats de recherche</div>
+      <div class="search-results" id="srList"></div>
+    </div>
+    <div id="stockView">
+      <div class="stats" id="statsStrip"></div>
+      <div class="stitle">Compartiments
+        <button class="abtn" onclick="openAddComp()">+ Compartiment</button>
+      </div>
+      <div class="comp-list" id="compList"></div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE ALERTES ══ -->
+  <div class="page" id="page-alerts">
+    <div class="stitle">Alertes stock</div>
+    <div id="alertsList"></div>
+  </div>
+
+  <!-- ══ PAGE HISTORIQUE ══ -->
+  <div class="page" id="page-history">
+    <div class="stitle">Historique
+      <button class="abtn" style="background:var(--danger)" onclick="clearHistory()">Tout vider</button>
+    </div>
+    <div class="sbar" style="margin-bottom:10px">
+      <span class="sbar-ico">🔖</span>
+      <input type="text" id="riFilter" placeholder="Filtrer par n° RI…" oninput="renderHistory()">
+    </div>
+    <div class="swipe-hint">← Glisser pour supprimer un mouvement</div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- ══ PAGE CONFIG ══ -->
+  <div class="page" id="page-cloud">
+
+    <!-- Statut connexion -->
+    <div class="config-panel" id="dbStatusPanel">
+      <h3>🔌 Base de données Supabase</h3>
+      <p id="dbStatusText">Vérification de la connexion…</p>
+      <div class="config-status">
+        <div class="sync-dot" id="dbDot"></div>
+        <span id="dbStatusLabel">En attente…</span>
+      </div>
+    </div>
+
+    <div class="ccloud">
+      <h3>💾 Sauvegarde locale</h3>
+      <p>Exportez toutes vos données dans un fichier JSON de secours.</p>
+      <button class="pbtn" onclick="exportData()">⬇️ Exporter JSON</button>
+      <div class="stline" id="exportStatus"></div>
+    </div>
+
+    <div class="ccloud">
+      <h3>📥 Restaurer depuis fichier</h3>
+      <p>Importez un fichier .json. <strong style="color:var(--danger)">Les données actuelles seront remplacées.</strong></p>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      <button class="sbtn" onclick="document.getElementById('importFile').click()">📂 Charger un fichier JSON</button>
+    </div>
+
+    <div class="ccloud">
+      <h3>⚙️ À propos</h3>
+      <p>Gestion de stock · Technicien Weishaupt<br>Version 4.0 · Supabase Cloud · N° RI obligatoire sur retrait</p>
+      <button class="sbtn" onclick="resetAll()" style="border-color:rgba(231,76,60,.4);color:var(--danger);margin-top:4px">
+        🗑️ Réinitialiser toutes les données
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="bnav">
+  <div class="nitem active" onclick="switchPage('stock',this)"><span class="ni">📦</span>Stock</div>
+  <div class="nitem" onclick="switchPage('alerts',this)">
+    <div class="nwrap"><span class="ni">⚠️</span><span class="nbadge" id="alertBadge"></span></div>Alertes
+  </div>
+  <div class="nitem" onclick="switchPage('history',this)"><span class="ni">📋</span>Historique</div>
+  <div class="nitem" onclick="switchPage('cloud',this)"><span class="ni">⚙️</span>Config</div>
+</nav>
+
+<!-- ══ MODAL RETRAIT RI ══ -->
+<div class="moverlay" id="mRetrait" onclick="ovClose(event,'mRetrait')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2>📤 Retrait de stock</h2>
+    <div class="ri-banner">
+      <strong>📋 N° RI obligatoire</strong>
+      Chaque retrait doit être rattaché à un Rapport d'Intervention pour la traçabilité.
+    </div>
+    <div class="fg">
+      <label class="flbl">Pièce</label>
+      <div id="retraitItemName" style="padding:10px 13px;background:var(--bg);border-radius:var(--r2);
+        font-size:13px;font-weight:500;border:1px solid var(--border2)"></div>
+    </div>
+    <div class="fg">
+      <label class="flbl">N° RI — Rapport d'Intervention <span style="color:var(--acc)">*</span></label>
+      <input class="finput" id="riInput" placeholder="Ex : RI-2025-0042" autocapitalize="characters">
+    </div>
+    <div class="fg">
+      <label class="flbl">Quantité retirée</label>
+      <div style="display:flex;align-items:center;gap:14px;padding:4px 0">
+        <button class="qbtn minus" onclick="adjRetraitQty(-1)" style="width:38px;height:38px;font-size:22px">−</button>
+        <span id="retraitQtyDisplay" style="font-family:Rajdhani,sans-serif;font-size:32px;font-weight:700;
+          min-width:44px;text-align:center;color:var(--danger)">1</span>
+        <button class="qbtn plus" onclick="adjRetraitQty(+1)" style="width:38px;height:38px;font-size:22px">+</button>
+        <span id="retraitStockInfo" style="font-size:12px;color:var(--txt2)"></span>
+      </div>
+    </div>
+    <div class="macts">
+      <button class="cancbtn" onclick="closeM('mRetrait')">Annuler</button>
+      <button class="pbtn" onclick="confirmRetrait()"
+        style="background:linear-gradient(135deg,var(--danger),#c0392b)">
+        📤 Confirmer le retrait
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL COMPARTIMENT ══ -->
+<div class="moverlay" id="mComp" onclick="ovClose(event,'mComp')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="mCompTitle">Nouveau compartiment</h2>
+    <div class="fg">
+      <label class="flbl">Emoji / Icône</label>
+      <input class="finput" id="cEmoji" placeholder="🚐" maxlength="4">
+    </div>
+    <div class="fg">
+      <label class="flbl">Nom du compartiment</label>
+      <input class="finput" id="cName" placeholder="Ex : Porte latérale">
+    </div>
+    <div class="macts">
+      <button class="cancbtn" onclick="closeM('mComp')">Annuler</button>
+      <button class="pbtn" onclick="saveComp()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL TIROIR ══ -->
+<div class="moverlay" id="mTiroir" onclick="ovClose(event,'mTiroir')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="mTiroirTitle">Nouveau tiroir</h2>
+    <div class="fg">
+      <label class="flbl">Nom du tiroir</label>
+      <input class="finput" id="tName" placeholder="Ex : Électrodes allumage">
+    </div>
+    <div class="fg">
+      <label class="flbl">Compartiment</label>
+      <select class="fsel" id="tComp"></select>
+    </div>
+    <div class="macts">
+      <button class="cancbtn" onclick="closeM('mTiroir')">Annuler</button>
+      <button class="pbtn" onclick="saveTiroir()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL PIÈCE ══ -->
+<div class="moverlay" id="mItem" onclick="ovClose(event,'mItem')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="mItemTitle">Nouvelle pièce</h2>
+    <div class="fg">
+      <label class="flbl">Désignation</label>
+      <input class="finput" id="iName" placeholder="Ex : Électrode allumage WL10">
+    </div>
+    <div class="fg">
+      <label class="flbl">Référence / N° pièce</label>
+      <input class="finput" id="iRef" placeholder="Ex : 230 60 9046">
+    </div>
+    <div class="frow">
+      <div class="fg">
+        <label class="flbl">Qté actuelle</label>
+        <input class="finput" id="iQty" type="number" min="0" placeholder="0">
+      </div>
+      <div class="fg">
+        <label class="flbl">Seuil alerte</label>
+        <input class="finput" id="iMin" type="number" min="0" placeholder="1">
+      </div>
+    </div>
+    <div class="fg">
+      <label class="flbl">Compartiment</label>
+      <select class="fsel" id="iComp" onchange="refreshTiroirSel(null)"></select>
+    </div>
+    <div class="fg">
+      <label class="flbl">Tiroir</label>
+      <select class="fsel" id="iTiroir"></select>
+    </div>
+    <div class="macts">
+      <button class="cancbtn" onclick="closeM('mItem')">Annuler</button>
+      <button class="pbtn" onclick="saveItem()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL DETAIL ══ -->
+<div class="moverlay" id="mDetail" onclick="ovClose(event,'mDetail')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="detTitle"></h2>
+    <div id="detBody"></div>
+    <div class="macts" style="margin-top:14px">
+      <button class="cancbtn" onclick="closeM('mDetail')">Fermer</button>
+      <button class="pbtn" id="detEditBtn">✏️ Modifier</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════════
+     JAVASCRIPT PRINCIPAL
+══════════════════════════════════════════ -->
+<script>
+// ═══ SUPABASE INIT ═══
+let sbClient = null;
+let isConnected = false;
+
+function initSupabase() {
+  try {
+    if (SUPABASE_URL === 'VOTRE_SUPABASE_URL' || SUPABASE_KEY === 'VOTRE_SUPABASE_ANON_KEY') {
+      throw new Error('config');
+    }
+    sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+// ═══ DATA EN MÉMOIRE ═══
+let db = { comps:[], tiroirs:[], items:[], history:[] };
+let editCompId=null, editTiroirId=null, editItemId=null;
+let retraitItemId=null, retraitQty=1;
+
+// ═══ SYNC STATE ═══
+function setSyncing() {
+  document.getElementById('syncDot').className = 'sync-dot syncing';
+}
+function setSynced() {
+  document.getElementById('syncDot').className = 'sync-dot';
+  isConnected = true;
+}
+function setSyncError() {
+  document.getElementById('syncDot').className = 'sync-dot error';
+}
+
+// ═══ CHARGEMENT INITIAL ═══
+async function initApp() {
+  const overlay = document.getElementById('loadingOverlay');
+  const loadTxt = document.getElementById('loadingTxt');
+
+  const configured = initSupabase();
+
+  if (!configured) {
+    loadTxt.textContent = 'Configuration manquante — mode hors-ligne';
+    db = loadLocal();
+    setTimeout(() => {
+      overlay.classList.add('hidden');
+      setSyncError();
+      updateDbStatus(false, 'Non configuré — éditez le fichier HTML');
+      renderAll();
+    }, 800);
+    return;
+  }
+
+  loadTxt.textContent = 'Connexion à Supabase…';
+  setSyncing();
+
+  try {
+    await loadFromSupabase();
+    setSynced();
+    updateDbStatus(true, 'Connecté · données synchronisées');
+  } catch(e) {
+    console.error('Supabase error:', e);
+    setSyncError();
+    db = loadLocal();
+    updateDbStatus(false, 'Erreur de connexion — données locales chargées');
+    toast('⚠️ Mode hors-ligne — données locales');
+  }
+
+  overlay.classList.add('hidden');
+  renderAll();
+}
+
+// ═══ SUPABASE — LECTURE ═══
+async function loadFromSupabase() {
+  const [compsRes, tiroirsRes, itemsRes, histRes] = await Promise.all([
+    sbClient.from('comps').select('*').order('sort_order'),
+    sbClient.from('tiroirs').select('*').order('sort_order'),
+    sbClient.from('items').select('*').order('name'),
+    sbClient.from('history').select('*').order('ts', { ascending: false }).limit(300)
+  ]);
+
+  if (compsRes.error)   throw compsRes.error;
+  if (tiroirsRes.error) throw tiroirsRes.error;
+  if (itemsRes.error)   throw itemsRes.error;
+  if (histRes.error)    throw histRes.error;
+
+  db.comps   = compsRes.data.map(r => ({ id:r.id, name:r.name, emoji:r.emoji, open:r.open||false }));
+  db.tiroirs = tiroirsRes.data.map(r => ({ id:r.id, name:r.name, compId:r.comp_id, open:r.open||false }));
+  db.items   = itemsRes.data.map(r => ({ id:r.id, name:r.name, ref:r.ref||'', qty:r.qty, min:r.min_qty, tiroirId:r.tiroir_id }));
+  db.history = histRes.data.map(r => ({ id:r.id, name:r.name, tiroirId:r.tiroir_id, delta:r.delta, before:r.qty_before, after:r.qty_after, ri:r.ri_number, ts:new Date(r.ts).getTime() }));
+
+  saveLocal();
+}
+
+// ═══ SUPABASE — ÉCRITURE ═══
+async function sbUpsertComp(c) {
+  if (!sbClient) return;
+  setSyncing();
+  const { error } = await sbClient.from('comps').upsert({ id:c.id, name:c.name, emoji:c.emoji, open:c.open, sort_order:db.comps.indexOf(c) });
+  if (error) { setSyncError(); throw error; }
+  setSynced();
+}
+async function sbDeleteComp(id) {
+  if (!sbClient) return;
+  setSyncing();
+  const { error } = await sbClient.from('comps').delete().eq('id', id);
+  if (error) { setSyncError(); throw error; }
+  setSynced();
+}
+async function sbUpsertTiroir(t) {
+  if (!sbClient) return;
+  setSyncing();
+  const { error } = await sbClient.from('tiroirs').upsert({ id:t.id, name:t.name, comp_id:t.compId, open:t.open, sort_order:db.tiroirs.indexOf(t) });
+  if (error) { setSyncError(); throw error; }
+  setSynced();
+}
+async function sbDeleteTiroir(id) {
+  if (!sbClient) return;
+  setSyncing();
+  const { error } = await sbClient.from('tiroirs').delete().eq('id', id);
+  if (error) { setSyncError(); throw error; }
+  setSynced();
+}
+async function sbUpsertItem(item) {
+  if (!sbClient) return;
+  setSyncing();
+  const { error } = await sbClient.from('items').upsert({ id:item.id, name:item.name, ref:item.ref, qty:item.qty, min_qty:item.min, tiroir_id:item.tiroirId });
+  if (error) { setSyncError(); throw error; }
+  setSynced();
+}
+async function sbDeleteItem(id) {
+  if (!sbClient) return;
+  setSyncing();
+  const { error } = await sbClient.from('items').delete().eq('id', id);
+  if (error) { setSyncError(); throw error; }
+  setSynced();
+}
+async function sbInsertHistory(h) {
+  if (!sbClient) return;
+  setSyncing();
+  const { error } = await sbClient.from('history').insert({ id:h.id, name:h.name, tiroir_id:h.tiroirId, delta:h.delta, qty_before:h.before, qty_after:h.after, ri_number:h.ri, ts:new Date(h.ts).toISOString() });
+  if (error) { setSyncError(); throw error; }
+  setSynced();
+}
+async function sbDeleteHistory(id) {
+  if (!sbClient) return;
+  setSyncing();
+  const { error } = await sbClient.from('history').delete().eq('id', id);
+  if (error) { setSyncError(); throw error; }
+  setSynced();
+}
+async function sbClearHistory() {
+  if (!sbClient) return;
+  setSyncing();
+  const { error } = await sbClient.from('history').delete().neq('id', 'x');
+  if (error) { setSyncError(); throw error; }
+  setSynced();
+}
+
+// ═══ LOCAL STORAGE (FALLBACK) ═══
+const LS = 'wsh_stock_v4';
+function saveLocal()  { try { localStorage.setItem(LS, JSON.stringify(db)); } catch(e){} }
+function loadLocal()  { try { return JSON.parse(localStorage.getItem(LS)) || defaultData(); } catch(e) { return defaultData(); } }
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+
+function defaultData() {
+  const comps = [
+    {id:uid(),name:'Porte latérale',emoji:'🚪',open:false},
+    {id:uid(),name:'Tiroir droit',emoji:'➡️',open:false},
+    {id:uid(),name:'Tiroir gauche',emoji:'⬅️',open:false},
+    {id:uid(),name:'Casier',emoji:'🗄️',open:false},
+  ];
+  return {comps, tiroirs:[], items:[], history:[]};
+}
+
+// ═══ STATUT DB ═══
+function updateDbStatus(ok, msg) {
+  const dot = document.getElementById('dbDot');
+  const lbl = document.getElementById('dbStatusLabel');
+  const txt = document.getElementById('dbStatusText');
+  dot.className = 'sync-dot ' + (ok ? '' : 'error');
+  lbl.textContent = ok ? '✓ ' + msg : '✗ ' + msg;
+  if (!ok) {
+    txt.innerHTML = `Ajoutez vos clés Supabase dans le fichier HTML.<br>
+      Voir la section <strong>Guide d'installation</strong> ci-dessous.`;
+  } else {
+    txt.textContent = 'Toutes vos données sont stockées dans le cloud Supabase.';
+  }
+}
+
+// ═══ NAV ═══
+function switchPage(p, el) {
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.nitem').forEach(x => x.classList.remove('active'));
+  document.getElementById('page-' + p).classList.add('active');
+  el.classList.add('active');
+  if (p === 'alerts')  renderAlerts();
+  if (p === 'history') renderHistory();
+  if (p === 'stock')   renderAll();
+}
+
+// ═══ SEARCH ═══
+function toggleSearch() {
+  const bar = document.getElementById('searchBar');
+  const btn = document.getElementById('searchToggleBtn');
+  const isOpen = bar.style.display !== 'none';
+  bar.style.display = isOpen ? 'none' : 'block';
+  btn.classList.toggle('act', !isOpen);
+  if (!isOpen) document.getElementById('searchInput').focus();
+  else clearSearch();
+}
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchResults').style.display = 'none';
+  document.getElementById('stockView').style.display = 'block';
+  document.getElementById('searchToggleBtn').classList.remove('act');
+  document.getElementById('searchBar').style.display = 'none';
+}
+function onSearch() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const srDiv = document.getElementById('searchResults');
+  const stockView = document.getElementById('stockView');
+  if (!q) { srDiv.style.display='none'; stockView.style.display='block'; return; }
+  srDiv.style.display = 'block'; stockView.style.display = 'none';
+  const results = db.items.filter(i =>
+    i.name.toLowerCase().includes(q) || (i.ref||'').toLowerCase().includes(q)
+  );
+  const list = document.getElementById('srList');
+  if (!results.length) {
+    list.innerHTML = `<div class="empty" style="padding:24px 0"><div class="eico">🔍</div><p>Aucun résultat pour "<strong>${q}</strong>"</p></div>`;
+    return;
+  }
+  const hl = (str, q) => str.replace(
+    new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`,'gi'),
+    '<mark style="background:rgba(232,64,28,0.25);color:var(--acc2);border-radius:2px">$1</mark>'
+  );
+  list.innerHTML = results.map(item => {
+    const t = db.tiroirs.find(x => x.id === item.tiroirId);
+    const c = t ? db.comps.find(x => x.id === t.compId) : null;
+    const dc = item.qty <= 0 ? 'd' : item.qty <= item.min ? 'w' : '';
+    return `<div class="sr-card" onclick="showDetail('${item.id}')">
+      <div class="sr-dot ${dc}"></div>
+      <div class="sr-info">
+        <div class="sr-name">${hl(item.name, q)}</div>
+        <div class="sr-sub">${item.ref ? hl(item.ref, q) + ' · ' : ''}${c ? c.emoji+' '+c.name+' › ' : ''}${t ? t.name : '—'}</div>
+      </div>
+      <div><div class="sr-qty ${dc}">${item.qty}</div>
+        <div style="font-size:10px;color:var(--txt2);text-align:right">en stock</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══ RENDER ═══
+function renderAll() { renderStats(); renderComps(); updateBadge(); }
+
+function renderStats() {
+  const t = db.items.length;
+  const d = db.items.filter(i => i.qty <= 0).length;
+  const w = db.items.filter(i => i.qty > 0 && i.qty <= i.min).length;
+  document.getElementById('statsStrip').innerHTML =
+    `<div class="scard"><div class="sv">${t}</div><div class="sl">Références</div></div>
+     <div class="scard d"><div class="sv">${d}</div><div class="sl">Rupture</div></div>
+     <div class="scard w"><div class="sv">${w}</div><div class="sl">Stock faible</div></div>
+     <div class="scard o"><div class="sv">${t-d-w}</div><div class="sl">Disponibles</div></div>`;
+}
+
+function updateBadge() {
+  const n = db.items.filter(i => i.qty <= i.min).length;
+  const b = document.getElementById('alertBadge');
+  b.style.display = n > 0 ? 'block' : 'none';
+  b.textContent = n;
+}
+
+function renderComps() {
+  let html = '';
+  db.comps.forEach(comp => {
+    const cTiroirs = db.tiroirs.filter(t => t.compId === comp.id);
+    const allItems = db.items.filter(i => cTiroirs.some(t => t.id === i.tiroirId));
+    const alerts   = allItems.filter(i => i.qty <= i.min).length;
+    const isOpen   = comp.open;
+    html += `<div class="comp-card ${alerts>0?'has-alert':''} ${isOpen?'open':''}" id="comp-${comp.id}">
+      <div class="comp-hdr" onclick="toggleComp('${comp.id}')">
+        <span class="comp-ico">${comp.emoji||'📦'}</span>
+        <div class="comp-info">
+          <div class="comp-name">${comp.name}</div>
+          <div class="comp-meta">${cTiroirs.length} tiroir${cTiroirs.length!==1?'s':''} · ${allItems.length} pièce${allItems.length!==1?'s':''}</div>
+        </div>
+        ${alerts>0 ? `<span class="cbadge alert">⚠ ${alerts}</span>` : `<span class="cbadge ok">✓</span>`}
+        <span class="comp-chev">▼</span>
+      </div>`;
+    if (isOpen) {
+      html += `<div class="tiroir-list">`;
+      cTiroirs.forEach(t => {
+        const tItems  = db.items.filter(i => i.tiroirId === t.id);
+        const tAlerts = tItems.filter(i => i.qty <= i.min).length;
+        const tOpen   = t.open;
+        html += `<div class="tiroir-row ${tOpen?'open':''}" id="t-${t.id}">
+          <div class="tiroir-hdr" onclick="toggleTiroir('${t.id}')">
+            <span style="font-size:13px;color:var(--txt3)">▸</span>
+            <span class="tiroir-label">${t.name}</span>
+            <span class="tiroir-count">${tItems.length} pièce${tItems.length!==1?'s':''}</span>
+            ${tAlerts>0 ? `<span class="tiroir-badge">⚠ ${tAlerts}</span>` : ''}
+            <span class="tiroir-chev">▾</span>
+          </div>`;
+        if (tOpen) {
+          html += `<div class="items-wrap">`;
+          if (tItems.length === 0) {
+            html += `<div style="padding:12px 15px;font-size:12px;color:var(--txt3);text-align:center">
+              Tiroir vide — <span style="color:var(--acc);cursor:pointer" onclick="openAddItem('${t.id}')">Ajouter une pièce</span></div>`;
+          } else {
+            tItems.forEach(item => {
+              const dc = item.qty <= 0 ? 'd' : item.qty <= item.min ? 'w' : '';
+              html += `<div class="irow">
+                <div class="idot ${dc}"></div>
+                <div class="iinfo" onclick="showDetail('${item.id}')">
+                  <div class="iname">${item.name}</div>
+                  <div class="imeta">${item.ref||'Pas de référence'}</div>
+                </div>
+                <div class="iqty-ctrl">
+                  <button class="qbtn minus" onclick="openRetrait('${item.id}')">−</button>
+                  <span class="qdsp ${dc}">${item.qty}</span>
+                  <button class="qbtn plus" onclick="addOne('${item.id}')">+</button>
+                </div>
+                <div class="iacts">
+                  <button class="iact" onclick="openEditItem('${item.id}')">✏️</button>
+                  <button class="iact del" onclick="delItem('${item.id}')">🗑️</button>
+                </div>
+              </div>`;
+            });
+          }
+          html += `<div class="add-item-row"><button onclick="openAddItem('${t.id}')">+ Ajouter une pièce</button></div>`;
+          html += `</div>`;
+          html += `<div class="tiroir-actions-bar">
+            <button class="tact-btn" onclick="openEditTiroir('${t.id}')">✏️ Renommer</button>
+            <button class="tact-btn del" onclick="delTiroir('${t.id}')">🗑️ Supprimer</button>
+          </div>`;
+        }
+        html += `</div>`;
+      });
+      html += `<div class="add-tiroir-row"><button onclick="openAddTiroir('${comp.id}')">+ Ajouter un tiroir</button></div>`;
+      html += `</div>`;
+      html += `<div class="comp-actions">
+        <button class="cact-btn" onclick="openEditComp('${comp.id}')">✏️ Renommer</button>
+        <button class="cact-btn del" onclick="delComp('${comp.id}')">🗑️ Supprimer</button>
+      </div>`;
+    }
+    html += `</div>`;
+  });
+  if (!html) html = `<div class="empty"><div class="eico">📭</div><p>Aucun compartiment.<br>Appuyez sur "+ Compartiment" pour commencer.</p></div>`;
+  document.getElementById('compList').innerHTML = html;
+}
+
+async function toggleComp(id) {
+  const c = db.comps.find(x => x.id === id);
+  if (!c) return;
+  c.open = !c.open;
+  saveLocal();
+  renderAll();
+  try { await sbUpsertComp(c); } catch(e) { toast('⚠️ Erreur de sync'); }
+}
+
+async function toggleTiroir(id) {
+  const t = db.tiroirs.find(x => x.id === id);
+  if (!t) return;
+  t.open = !t.open;
+  saveLocal();
+  renderAll();
+  try { await sbUpsertTiroir(t); } catch(e) {}
+}
+
+// ═══ RETRAIT RI ═══
+function openRetrait(itemId) {
+  const item = db.items.find(i => i.id === itemId);
+  if (!item || item.qty <= 0) { toast('⚠️ Stock déjà à zéro'); return; }
+  retraitItemId = itemId; retraitQty = 1;
+  document.getElementById('retraitItemName').textContent = item.name + (item.ref ? ' — ' + item.ref : '');
+  document.getElementById('riInput').value = '';
+  document.getElementById('retraitQtyDisplay').textContent = '1';
+  document.getElementById('retraitStockInfo').textContent = 'Stock actuel : ' + item.qty;
+  openM('mRetrait');
+  setTimeout(() => document.getElementById('riInput').focus(), 320);
+}
+
+function adjRetraitQty(d) {
+  const item = db.items.find(i => i.id === retraitItemId);
+  if (!item) return;
+  retraitQty = Math.max(1, Math.min(item.qty, retraitQty + d));
+  document.getElementById('retraitQtyDisplay').textContent = retraitQty;
+}
+
+async function confirmRetrait() {
+  const ri = document.getElementById('riInput').value.trim();
+  if (!ri) {
+    const inp = document.getElementById('riInput');
+    inp.classList.add('err'); setTimeout(() => inp.classList.remove('err'), 600);
+    toast('⚠️ Le n° RI est obligatoire'); return;
+  }
+  const item = db.items.find(i => i.id === retraitItemId); if (!item) return;
+  const before = item.qty;
+  item.qty = Math.max(0, item.qty - retraitQty);
+  const h = { id:uid(), name:item.name, tiroirId:item.tiroirId, delta:-retraitQty, before, after:item.qty, ri, ts:Date.now() };
+  db.history.unshift(h);
+  if (db.history.length > 300) db.history = db.history.slice(0, 300);
+  saveLocal();
+  closeM('mRetrait');
+  renderAll();
+  toast(`📤 Retrait enregistré — RI : ${ri}`);
+  try {
+    await sbUpsertItem(item);
+    await sbInsertHistory(h);
+  } catch(e) { toast('⚠️ Erreur sync cloud'); }
+}
+
+async function addOne(itemId) {
+  const item = db.items.find(i => i.id === itemId); if (!item) return;
+  const before = item.qty; item.qty++;
+  const h = { id:uid(), name:item.name, tiroirId:item.tiroirId, delta:1, before, after:item.qty, ri:null, ts:Date.now() };
+  db.history.unshift(h);
+  if (db.history.length > 300) db.history = db.history.slice(0, 300);
+  saveLocal(); renderAll();
+  try {
+    await sbUpsertItem(item);
+    await sbInsertHistory(h);
+  } catch(e) {}
+}
+
+// ═══ ALERTES ═══
+function renderAlerts() {
+  const alerts = db.items.filter(i => i.qty <= i.min).sort((a,b) => a.qty - b.qty);
+  const el = document.getElementById('alertsList');
+  if (!alerts.length) {
+    el.innerHTML = `<div class="empty"><div class="eico">✅</div><p>Aucune alerte de stock.</p></div>`;
+    return;
+  }
+  el.innerHTML = alerts.map(item => {
+    const t = db.tiroirs.find(x => x.id === item.tiroirId);
+    const c = t ? db.comps.find(x => x.id === t.compId) : null;
+    const isDanger = item.qty <= 0;
+    return `<div class="alert-card ${isDanger?'':'w'}">
+      <div class="aico">${isDanger?'🔴':'🟡'}</div>
+      <div class="ainfo">
+        <div class="aname">${item.name}</div>
+        <div class="adtl">${c?c.emoji+' '+c.name:''} › ${t?t.name:''}</div>
+        <div class="adtl">Réf : ${item.ref||'—'} · Seuil min : ${item.min}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="aqty">${item.qty}</div>
+        <div style="font-size:10px;color:var(--txt2)">en stock</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══ HISTORIQUE + SWIPE ═══
+function renderHistory() {
+  const riF = (document.getElementById('riFilter')?.value || '').trim().toLowerCase();
+  let hist = db.history;
+  if (riF) hist = hist.filter(h => h.ri && h.ri.toLowerCase().includes(riF));
+  const el = document.getElementById('historyList');
+  if (!hist.length) {
+    el.innerHTML = `<div class="empty"><div class="eico">${riF?'🔖':'📋'}</div>
+      <p>${riF ? `Aucun mouvement pour RI "<strong>${riF}</strong>"` : 'Aucun mouvement enregistré.'}</p></div>`;
+    return;
+  }
+  el.innerHTML = hist.map(h => {
+    const t = db.tiroirs.find(x => x.id === h.tiroirId);
+    const c = t ? db.comps.find(x => x.id === t.compId) : null;
+    const d = new Date(h.ts);
+    const fmt = d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}) + ' ' +
+                d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="h-wrapper" id="hw-${h.id}">
+      <div class="h-delete-bg"><span>🗑️</span></div>
+      <div class="hitem" data-hid="${h.id}">
+        <div class="hico">${h.delta>0?'📥':'📤'}</div>
+        <div class="hinf">
+          <div class="hname">${h.name}</div>
+          <div class="hmeta">${c?c.emoji+' '+c.name+' › ':''}${t?t.name:''}</div>
+          <div class="hmeta">${fmt} · ${h.before} → ${h.after}</div>
+          ${h.ri ? `<span class="ri-tag">📋 RI : ${h.ri}</span>` : ''}
+        </div>
+        <div class="hdelta ${h.delta>0?'p':'m'}">${h.delta>0?'+':''}${h.delta}</div>
+      </div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.hitem').forEach(el => attachSwipe(el));
+}
+
+function attachSwipe(el) {
+  let startX=0, startY=0, dx=0, moved=false, locked=false;
+  const THRESHOLD = 80;
+  el.addEventListener('touchstart', e => {
+    startX=e.touches[0].clientX; startY=e.touches[0].clientY;
+    dx=0; moved=false; locked=false; el.classList.add('swiping');
+  }, {passive:true});
+  el.addEventListener('touchmove', e => {
+    const diffX = e.touches[0].clientX - startX;
+    const diffY = e.touches[0].clientY - startY;
+    if (!locked && Math.abs(diffY) > Math.abs(diffX)) { locked=true; }
+    if (locked) return;
+    dx = Math.min(0, diffX); moved=true;
+    el.style.transform = `translateX(${dx}px)`;
+    e.preventDefault();
+  }, {passive:false});
+  el.addEventListener('touchend', () => {
+    el.classList.remove('swiping');
+    if (!moved || locked) { el.style.transform=''; return; }
+    if (dx < -THRESHOLD) {
+      el.style.transform = 'translateX(-100%)';
+      el.style.transition = 'transform .25s ease';
+      setTimeout(() => deleteHistoryItem(el.dataset.hid), 250);
+    } else { el.style.transform=''; }
+  });
+}
+
+async function deleteHistoryItem(hid) {
+  db.history = db.history.filter(h => h.id !== hid);
+  saveLocal(); renderHistory();
+  toast('🗑️ Mouvement supprimé');
+  try { await sbDeleteHistory(hid); } catch(e) {}
+}
+
+async function clearHistory() {
+  if (!confirm('Vider tout l\'historique ?')) return;
+  db.history = [];
+  saveLocal(); renderHistory();
+  try { await sbClearHistory(); } catch(e) {}
+}
+
+// ═══ COMPARTIMENT ═══
+function openAddComp() {
+  editCompId = null;
+  document.getElementById('mCompTitle').textContent = 'Nouveau compartiment';
+  document.getElementById('cEmoji').value = '';
+  document.getElementById('cName').value = '';
+  openM('mComp');
+  setTimeout(() => document.getElementById('cName').focus(), 320);
+}
+function openEditComp(id) {
+  editCompId = id;
+  const c = db.comps.find(x => x.id === id);
+  document.getElementById('mCompTitle').textContent = 'Modifier le compartiment';
+  document.getElementById('cEmoji').value = c.emoji || '';
+  document.getElementById('cName').value  = c.name;
+  openM('mComp');
+}
+async function saveComp() {
+  const name  = document.getElementById('cName').value.trim();
+  const emoji = document.getElementById('cEmoji').value.trim() || '📦';
+  if (!name) { toast('⚠️ Nom requis'); return; }
+  let c;
+  if (editCompId) {
+    c = db.comps.find(x => x.id === editCompId);
+    c.name = name; c.emoji = emoji;
+  } else {
+    c = { id: uid(), name, emoji, open: true };
+    db.comps.push(c);
+  }
+  saveLocal(); closeM('mComp'); renderAll();
+  toast(editCompId ? '✓ Compartiment modifié' : '✓ Compartiment créé');
+  try { await sbUpsertComp(c); } catch(e) { toast('⚠️ Erreur sync'); }
+}
+async function delComp(id) {
+  const c  = db.comps.find(x => x.id === id);
+  const ts = db.tiroirs.filter(t => t.compId === id);
+  const its= db.items.filter(i => ts.some(t => t.id === i.tiroirId));
+  if (!confirm(`Supprimer "${c.name}" avec ${ts.length} tiroir(s) et ${its.length} pièce(s) ?`)) return;
+  const tids = ts.map(t => t.id);
+  db.comps   = db.comps.filter(x => x.id !== id);
+  db.tiroirs = db.tiroirs.filter(t => t.compId !== id);
+  db.items   = db.items.filter(i => !tids.includes(i.tiroirId));
+  saveLocal(); renderAll(); toast('🗑️ Compartiment supprimé');
+  try { await sbDeleteComp(id); } catch(e) {}
+}
+
+// ═══ TIROIR ═══
+function fillCompSel(selId, selCompId) {
+  document.getElementById(selId).innerHTML = db.comps.map(c =>
+    `<option value="${c.id}" ${c.id===selCompId?'selected':''}>${c.emoji} ${c.name}</option>`
+  ).join('');
+}
+function openAddTiroir(compId) {
+  editTiroirId = null;
+  document.getElementById('mTiroirTitle').textContent = 'Nouveau tiroir';
+  document.getElementById('tName').value = '';
+  fillCompSel('tComp', compId);
+  openM('mTiroir');
+  setTimeout(() => document.getElementById('tName').focus(), 320);
+}
+function openEditTiroir(id) {
+  editTiroirId = id;
+  const t = db.tiroirs.find(x => x.id === id);
+  document.getElementById('mTiroirTitle').textContent = 'Modifier le tiroir';
+  document.getElementById('tName').value = t.name;
+  fillCompSel('tComp', t.compId);
+  openM('mTiroir');
+}
+async function saveTiroir() {
+  const name   = document.getElementById('tName').value.trim();
+  const compId = document.getElementById('tComp').value;
+  if (!name) { toast('⚠️ Nom requis'); return; }
+  let t;
+  if (editTiroirId) {
+    t = db.tiroirs.find(x => x.id === editTiroirId);
+    t.name = name; t.compId = compId;
+  } else {
+    t = { id: uid(), name, compId, open: true };
+    db.tiroirs.push(t);
+  }
+  saveLocal(); closeM('mTiroir'); renderAll();
+  toast(editTiroirId ? '✓ Tiroir modifié' : '✓ Tiroir créé');
+  try { await sbUpsertTiroir(t); } catch(e) { toast('⚠️ Erreur sync'); }
+}
+async function delTiroir(id) {
+  const t   = db.tiroirs.find(x => x.id === id);
+  const its = db.items.filter(i => i.tiroirId === id);
+  if (!confirm(`Supprimer "${t.name}" et ses ${its.length} pièce(s) ?`)) return;
+  db.tiroirs = db.tiroirs.filter(x => x.id !== id);
+  db.items   = db.items.filter(i => i.tiroirId !== id);
+  saveLocal(); renderAll(); toast('🗑️ Tiroir supprimé');
+  try { await sbDeleteTiroir(id); } catch(e) {}
+}
+
+// ═══ PIÈCE ═══
+function refreshTiroirSel(forceId) {
+  const compId = document.getElementById('iComp').value;
+  const ts = db.tiroirs.filter(t => t.compId === compId);
+  document.getElementById('iTiroir').innerHTML = ts.map(t =>
+    `<option value="${t.id}" ${t.id===forceId?'selected':''}>${t.name}</option>`
+  ).join('');
+}
+function openAddItem(tiroirId) {
+  editItemId = null;
+  document.getElementById('mItemTitle').textContent = 'Nouvelle pièce';
+  ['iName','iRef'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('iQty').value = '0';
+  document.getElementById('iMin').value = '1';
+  const t = db.tiroirs.find(x => x.id === tiroirId);
+  fillCompSel('iComp', t ? t.compId : db.comps[0]?.id);
+  refreshTiroirSel(tiroirId);
+  openM('mItem');
+  setTimeout(() => document.getElementById('iName').focus(), 320);
+}
+function openEditItem(id) {
+  editItemId = id;
+  const item = db.items.find(i => i.id === id);
+  const t    = db.tiroirs.find(x => x.id === item.tiroirId);
+  document.getElementById('mItemTitle').textContent = 'Modifier la pièce';
+  document.getElementById('iName').value = item.name;
+  document.getElementById('iRef').value  = item.ref || '';
+  document.getElementById('iQty').value  = item.qty;
+  document.getElementById('iMin').value  = item.min;
+  fillCompSel('iComp', t ? t.compId : '');
+  refreshTiroirSel(item.tiroirId);
+  openM('mItem');
+}
+async function saveItem() {
+  const name = document.getElementById('iName').value.trim();
+  if (!name) { toast('⚠️ Désignation requise'); return; }
+  const data = {
+    name, ref: document.getElementById('iRef').value.trim(),
+    qty: parseInt(document.getElementById('iQty').value) || 0,
+    min: parseInt(document.getElementById('iMin').value) || 1,
+    tiroirId: document.getElementById('iTiroir').value
+  };
+  let item;
+  if (editItemId) {
+    item = db.items.find(i => i.id === editItemId);
+    Object.assign(item, data);
+  } else {
+    item = { id: uid(), ...data };
+    db.items.push(item);
+  }
+  saveLocal(); closeM('mItem'); renderAll();
+  toast(editItemId ? '✓ Pièce modifiée' : '✓ Pièce ajoutée');
+  try { await sbUpsertItem(item); } catch(e) { toast('⚠️ Erreur sync'); }
+}
+async function delItem(id) {
+  const it = db.items.find(i => i.id === id);
+  if (!confirm(`Supprimer "${it.name}" ?`)) return;
+  db.items = db.items.filter(i => i.id !== id);
+  saveLocal(); renderAll(); toast('🗑️ Pièce supprimée');
+  try { await sbDeleteItem(id); } catch(e) {}
+}
+
+// ═══ DETAIL ═══
+function showDetail(id) {
+  const it  = db.items.find(i => i.id === id);
+  const t   = db.tiroirs.find(x => x.id === it.tiroirId);
+  const c   = t ? db.comps.find(x => x.id === t.compId) : null;
+  const lastRI = db.history.filter(h => h.name === it.name && h.ri && h.delta < 0).slice(0,3);
+  document.getElementById('detTitle').textContent = it.name;
+  const qc = it.qty <= 0 ? 'var(--danger)' : it.qty <= it.min ? 'var(--warn)' : 'var(--ok)';
+  document.getElementById('detBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px">
+      <div style="background:var(--bg);border-radius:10px;padding:13px;text-align:center">
+        <div style="font-family:Rajdhani,sans-serif;font-size:36px;font-weight:700;color:${qc}">${it.qty}</div>
+        <div style="font-size:11px;color:var(--txt2)">En stock</div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:13px;text-align:center">
+        <div style="font-family:Rajdhani,sans-serif;font-size:36px;font-weight:700;color:var(--warn)">${it.min}</div>
+        <div style="font-size:11px;color:var(--txt2)">Seuil alerte</div>
+      </div>
+    </div>
+    <div style="font-size:13px;line-height:2.2;color:var(--txt2)">
+      ${it.ref ? `<div>📎 <strong style="color:var(--txt)">Réf :</strong> ${it.ref}</div>` : ''}
+      <div>📍 <strong style="color:var(--txt)">Emplacement :</strong> ${c?c.emoji+' '+c.name:''} › ${t?t.name:'—'}</div>
+    </div>
+    ${lastRI.length ? `
+    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+      <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Derniers retraits</div>
+      ${lastRI.map(h => {
+        const df = new Date(h.ts);
+        const fmt2 = df.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'2-digit'});
+        return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+          <span class="ri-tag">📋 ${h.ri}</span>
+          <span style="font-size:11px;color:var(--txt2)">${fmt2}</span>
+          <span style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--danger)">${h.delta}</span>
+        </div>`;
+      }).join('')}
+    </div>` : ''}`;
+  document.getElementById('detEditBtn').onclick = () => { closeM('mDetail'); openEditItem(id); };
+  openM('mDetail');
+}
+
+// ═══ IMPORT / EXPORT ═══
+function exportData() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `stock-camion-${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  document.getElementById('exportStatus').textContent = '✓ Fichier exporté';
+  document.getElementById('exportStatus').className = 'stline ok';
+  toast('💾 Sauvegarde exportée');
+}
+
+async function importData(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = async ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (!d.comps || !d.tiroirs || !d.items) throw 0;
+      if (!confirm('Restaurer cette sauvegarde ? Les données actuelles seront remplacées.')) return;
+      db = d; if (!db.history) db.history = [];
+      saveLocal(); renderAll(); toast('✓ Sauvegarde restaurée');
+      // Sync vers Supabase si connecté
+      if (sbClient) {
+        toast('⏳ Synchronisation cloud en cours…');
+        try {
+          for (const c of db.comps)   await sbUpsertComp(c);
+          for (const t of db.tiroirs) await sbUpsertTiroir(t);
+          for (const i of db.items)   await sbUpsertItem(i);
+          toast('✓ Données synchronisées dans le cloud');
+        } catch(err) { toast('⚠️ Erreur lors de la sync cloud'); }
+      }
+    } catch { toast('❌ Fichier invalide'); }
+  };
+  r.readAsText(file); e.target.value = '';
+}
+
+async function resetAll() {
+  if (!confirm('Réinitialiser TOUTES les données ? Action irréversible.')) return;
+  db = defaultData();
+  saveLocal(); renderAll(); toast('🔄 Données réinitialisées');
+}
+
+// ═══ MODALS ═══
+function openM(id) { document.getElementById(id).classList.add('open'); }
+function closeM(id) { document.getElementById(id).classList.remove('open'); }
+function ovClose(e, id) { if (e.target.id === id) closeM(id); }
+
+// ═══ TOAST ═══
+let _tt;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_tt); _tt = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ═══ START ═══
+initApp();
+</script>
+
+<!--
+╔══════════════════════════════════════════════════════════════════╗
+║              GUIDE D'INSTALLATION — LISEZ-MOI                   ║
+╠══════════════════════════════════════════════════════════════════╣
+║                                                                  ║
+║  ÉTAPE 1 — CRÉER LA BASE DE DONNÉES SUPABASE (5 min)            ║
+║  ────────────────────────────────────────────────────           ║
+║  1. Allez sur https://supabase.com → "Start for free"           ║
+║  2. Créez un compte (gratuit)                                    ║
+║  3. Créez un nouveau projet, choisissez une région Europe        ║
+║  4. Dans le menu gauche → "SQL Editor"                          ║
+║  5. Copiez-collez et exécutez ce SQL :                          ║
+║                                                                  ║
+║  -- Créer les tables                                             ║
+║  create table comps (                                            ║
+║    id text primary key,                                          ║
+║    name text not null,                                           ║
+║    emoji text,                                                   ║
+║    open boolean default false,                                   ║
+║    sort_order int default 0                                      ║
+║  );                                                              ║
+║  create table tiroirs (                                          ║
+║    id text primary key,                                          ║
+║    name text not null,                                           ║
+║    comp_id text references comps(id) on delete cascade,          ║
+║    open boolean default false,                                   ║
+║    sort_order int default 0                                      ║
+║  );                                                              ║
+║  create table items (                                            ║
+║    id text primary key,                                          ║
+║    name text not null,                                           ║
+║    ref text,                                                     ║
+║    qty int default 0,                                            ║
+║    min_qty int default 1,                                        ║
+║    tiroir_id text references tiroirs(id) on delete cascade       ║
+║  );                                                              ║
+║  create table history (                                          ║
+║    id text primary key,                                          ║
+║    name text,                                                    ║
+║    tiroir_id text,                                               ║
+║    delta int,                                                    ║
+║    qty_before int,                                               ║
+║    qty_after int,                                                ║
+║    ri_number text,                                               ║
+║    ts timestamptz default now()                                  ║
+║  );                                                              ║
+║  -- Activer l'accès public (Row Level Security off)             ║
+║  alter table comps   disable row level security;                 ║
+║  alter table tiroirs disable row level security;                 ║
+║  alter table items   disable row level security;                 ║
+║  alter table history disable row level security;                 ║
+║                                                                  ║
+║  ÉTAPE 2 — RÉCUPÉRER VOS CLÉS (2 min)                           ║
+║  ──────────────────────────────────────                          ║
+║  1. Menu gauche → "Project Settings" → "API"                    ║
+║  2. Copiez "Project URL" → remplacez VOTRE_SUPABASE_URL         ║
+║  3. Copiez "anon public" key → remplacez VOTRE_SUPABASE_ANON_KEY║
+║  4. Ces deux valeurs sont en haut de ce fichier HTML            ║
+║                                                                  ║
+║  ÉTAPE 3 — IMPORTER VOS DONNÉES EXISTANTES                      ║
+║  ─────────────────────────────────────────                       ║
+║  1. Exportez vos données depuis l'ancienne version (page Config) ║
+║  2. Ouvrez ce nouveau fichier dans votre navigateur              ║
+║  3. Allez dans Config → "Charger un fichier JSON"               ║
+║  4. Sélectionnez votre export → tout se sync automatiquement !   ║
+║                                                                  ║
+║  ÉTAPE 4 — METTRE EN LIGNE SUR NETLIFY (5 min)                  ║
+║  ──────────────────────────────────────────────                  ║
+║  1. Allez sur https://netlify.com → "Sign up" (gratuit)         ║
+║  2. Une fois connecté → "Add new site" → "Deploy manually"      ║
+║  3. Glissez-déposez ce fichier HTML dans la zone prévue         ║
+║  4. Netlify vous donne une URL ex: https://xxxx.netlify.app     ║
+║  5. Ouvrez cette URL sur votre téléphone → ajoutez à l'écran    ║
+║     d'accueil → vous avez une vraie app !                        ║
+║                                                                  ║
+║  ⚠️  SÉCURITÉ : Ce fichier contient vos clés Supabase.          ║
+║  Ne le partagez pas publiquement. Votre URL Netlify est         ║
+║  suffisamment secrète pour un usage personnel.                   ║
+╚══════════════════════════════════════════════════════════════════╝
+-->
+
+</body>
+</html>
