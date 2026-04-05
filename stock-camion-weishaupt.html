@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stock Camion">
+<meta name="theme-color" content="#0d0d14">
+<title>Stock Camion — Weishaupt</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+:root{
+  --bg:#0d0d14;--bg2:#13131f;--card:#191926;--card2:#1e1e30;
+  --acc:#e8401c;--acc2:#ff6040;
+  --txt:#eeeef8;--txt2:#7777aa;--txt3:#44445a;
+  --border:rgba(255,255,255,0.07);--border-acc:rgba(232,64,28,0.35);
+  --ok:#27ae60;--warn:#e67e22;--danger:#e74c3c;
+  --r:14px;--r2:9px;
+  --sh:0 4px 24px rgba(0,0,0,0.5);--sh-acc:0 4px 18px rgba(232,64,28,0.35);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{height:-webkit-fill-available}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);
+  min-height:100vh;min-height:-webkit-fill-available;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+.hdr{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,var(--bg) 75%,transparent);
+  padding:44px 18px 14px;display:flex;align-items:center;justify-content:space-between}
+.hdr-left{display:flex;align-items:center;gap:11px}
+.logo{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--acc),var(--acc2));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:17px;box-shadow:var(--sh-acc);flex-shrink:0}
+.hdr h1{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;letter-spacing:.3px}
+.hdr h1 span{color:var(--acc)}
+.hdr-right{display:flex;gap:7px}
+.ico-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border);
+  background:var(--card);color:var(--txt2);font-size:17px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .18s}
+.ico-btn:active{transform:scale(.9)}
+.ico-btn.active-search{background:var(--acc);color:#fff;border-color:var(--acc)}
+
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--card);
+  border-top:1px solid var(--border);display:flex;padding-bottom:max(env(safe-area-inset-bottom),6px)}
+.nitem{flex:1;padding:9px 0 7px;display:flex;flex-direction:column;align-items:center;gap:3px;
+  cursor:pointer;color:var(--txt3);font-size:10px;font-weight:500;letter-spacing:.4px;
+  text-transform:uppercase;transition:color .18s}
+.nitem .ni{font-size:19px;transition:transform .18s}
+.nitem.active{color:var(--acc)}
+.nitem.active .ni{transform:scale(1.12)}
+.nwrap{position:relative;display:inline-block}
+.nbadge{position:absolute;top:-4px;right:-6px;background:var(--danger);color:#fff;
+  font-size:9px;font-weight:700;border-radius:10px;padding:1px 5px;min-width:16px;
+  text-align:center;display:none}
+
+.main{padding:0 15px 96px}
+.page{display:none;animation:fadeUp .22s ease}
+.page.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+
+/* SEARCH */
+.sbar{position:relative;margin-bottom:16px}
+.sbar input{width:100%;padding:11px 14px 11px 40px;background:var(--card);
+  border:1px solid var(--border);border-radius:var(--r);color:var(--txt);
+  font-family:'Inter',sans-serif;font-size:15px;outline:none;transition:border-color .2s}
+.sbar input:focus{border-color:var(--border-acc)}
+.sbar input::placeholder{color:var(--txt3)}
+.sbar-ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--txt3)}
+.sbar-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  font-size:14px;color:var(--txt3);cursor:pointer;background:none;border:none;padding:4px}
+
+/* SEARCH RESULTS */
+.search-results{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.sr-card{background:var(--card);border-radius:var(--r2);border:1px solid var(--border);
+  padding:12px 14px;display:flex;align-items:center;gap:12px}
+.sr-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--ok)}
+.sr-dot.w{background:var(--warn)}.sr-dot.d{background:var(--danger)}
+.sr-info{flex:1;min-width:0}
+.sr-name{font-size:14px;font-weight:500}
+.sr-sub{font-size:11px;color:var(--txt2);margin-top:2px}
+.sr-qty{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700}
+.sr-qty.d{color:var(--danger)}.sr-qty.w{color:var(--warn)}
+
+/* STATS */
+.stats{display:flex;gap:9px;margin-bottom:18px;overflow-x:auto;padding-bottom:2px}
+.stats::-webkit-scrollbar{display:none}
+.scard{flex-shrink:0;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r2);padding:11px 15px;min-width:100px}
+.scard .sv{font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700}
+.scard .sl{font-size:11px;color:var(--txt2);margin-top:1px}
+.scard.d .sv{color:var(--danger)}.scard.w .sv{color:var(--warn)}.scard.o .sv{color:var(--ok)}
+
+.stitle{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;letter-spacing:1.4px;
+  text-transform:uppercase;color:var(--txt2);margin-bottom:11px;
+  display:flex;align-items:center;justify-content:space-between}
+.stitle .abtn{height:26px;padding:0 10px;border-radius:6px;background:var(--acc);color:#fff;
+  border:none;font-size:13px;font-weight:600;cursor:pointer;box-shadow:var(--sh-acc);
+  display:flex;align-items:center;gap:4px}
+
+/* COMPARTIMENT */
+.comp-list{display:flex;flex-direction:column;gap:10px}
+.comp-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.comp-card.has-alert{border-color:rgba(231,76,60,0.35)}
+.comp-hdr{padding:13px 15px;display:flex;align-items:center;gap:11px;cursor:pointer;user-select:none}
+.comp-ico{font-size:21px}
+.comp-info{flex:1}
+.comp-name{font-weight:600;font-size:15px}
+.comp-meta{font-size:12px;color:var(--txt2);margin-top:2px}
+.comp-chev{color:var(--txt3);font-size:11px;transition:transform .2s;margin-left:4px}
+.comp-card.open .comp-chev{transform:rotate(180deg)}
+.cbadge{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.cbadge.alert{background:rgba(231,76,60,0.15);color:var(--danger)}
+.cbadge.ok{background:rgba(39,174,96,0.12);color:var(--ok)}
+
+/* TIROIR */
+.tiroir-list{border-top:1px solid var(--border)}
+.tiroir-row{border-bottom:1px solid var(--border)}
+.tiroir-row:last-child{border-bottom:none}
+.tiroir-hdr{padding:10px 15px;display:flex;align-items:center;gap:10px;cursor:pointer;
+  background:rgba(0,0,0,0.15);user-select:none}
+.tiroir-label{flex:1;font-size:13px;font-weight:500;color:var(--txt2)}
+.tiroir-count{font-size:11px;color:var(--txt3)}
+.tiroir-chev{font-size:10px;color:var(--txt3);transition:transform .18s}
+.tiroir-row.open .tiroir-chev{transform:rotate(180deg)}
+.tiroir-badge{font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;
+  background:rgba(231,76,60,0.15);color:var(--danger)}
+.tiroir-actions-bar{padding:7px 15px;display:flex;gap:8px;justify-content:flex-end;
+  border-top:1px solid var(--border);background:rgba(0,0,0,0.1)}
+.tact-btn{font-size:11px;color:var(--txt2);background:none;border:none;cursor:pointer;padding:2px 6px}
+.tact-btn.del{color:var(--danger)}
+
+/* ITEMS */
+.items-wrap{padding:0 0 4px}
+.irow{padding:10px 15px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border);transition:background .12s}
+.irow:last-child{border-bottom:none}
+.irow:active{background:var(--card2)}
+.idot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--ok)}
+.idot.w{background:var(--warn)}.idot.d{background:var(--danger)}
+.iinfo{flex:1;min-width:0}
+.iname{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.imeta{font-size:11px;color:var(--txt2);margin-top:2px}
+.iqty-ctrl{display:flex;align-items:center;gap:5px}
+.qbtn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);
+  background:var(--bg);color:var(--txt);font-size:16px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .14s;flex-shrink:0}
+.qbtn:active{transform:scale(.86)}
+.qbtn.minus{border-color:rgba(231,76,60,0.25);color:var(--danger)}
+.qbtn.plus{border-color:rgba(39,174,96,0.25);color:var(--ok)}
+.qdsp{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;min-width:24px;text-align:center}
+.qdsp.d{color:var(--danger)}.qdsp.w{color:var(--warn)}
+.iacts{display:flex;gap:5px}
+.iact{width:26px;height:26px;border-radius:7px;border:none;background:var(--bg);
+  color:var(--txt2);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.iact:active{transform:scale(.88)}.iact.del{color:var(--danger)}
+.add-item-row{padding:8px 15px}
+.add-item-row button{width:100%;padding:8px;border-radius:8px;border:1px dashed var(--border);
+  background:transparent;color:var(--txt3);font-size:12px;cursor:pointer}
+.add-tiroir-row{padding:9px 15px;border-top:1px solid var(--border)}
+.add-tiroir-row button{width:100%;padding:7px;border-radius:7px;border:1px dashed var(--border);
+  background:transparent;color:var(--txt3);font-size:12px;cursor:pointer}
+.comp-actions{border-top:1px solid var(--border);padding:9px 15px;
+  display:flex;gap:8px;justify-content:flex-end}
+.cact-btn{font-size:12px;color:var(--txt2);background:none;border:none;cursor:pointer;padding:2px 6px}
+.cact-btn.del{color:var(--danger)}
+
+/* ALERTS */
+.alert-card{background:var(--card);border-radius:var(--r);border-left:3px solid var(--danger);
+  padding:13px 15px;margin-bottom:9px;display:flex;align-items:center;gap:13px}
+.alert-card.w{border-left-color:var(--warn)}
+.aico{font-size:20px}.ainfo{flex:1}
+.aname{font-weight:600;font-size:14px}
+.adtl{font-size:11px;color:var(--txt2);margin-top:3px;line-height:1.6}
+.aqty{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--danger)}
+.alert-card.w .aqty{color:var(--warn)}
+
+/* ══ HISTORIQUE — SWIPE TO DELETE ══ */
+.h-wrapper{position:relative;margin-bottom:7px;border-radius:var(--r2);overflow:hidden}
+.h-delete-bg{position:absolute;inset:0;background:var(--danger);
+  display:flex;align-items:center;justify-content:flex-end;
+  padding-right:18px;border-radius:var(--r2)}
+.h-delete-bg span{font-size:20px}
+.hitem{position:relative;background:var(--card);border-radius:var(--r2);
+  padding:11px 14px;display:flex;align-items:center;gap:11px;
+  transition:transform .25s ease;touch-action:pan-y;user-select:none;cursor:pointer}
+.hitem.swiping{transition:none}
+.hico{font-size:17px;flex-shrink:0}
+.hinf{flex:1;min-width:0}
+.hname{font-size:13px;font-weight:500}
+.hmeta{font-size:11px;color:var(--txt2);margin-top:2px;line-height:1.6}
+.hdelta{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:16px;text-align:right;
+  min-width:36px;flex-shrink:0}
+.hdelta.p{color:var(--ok)}.hdelta.m{color:var(--danger)}
+.ri-tag{display:inline-block;background:rgba(232,64,28,0.15);color:var(--acc2);
+  border-radius:5px;padding:1px 7px;font-size:10px;font-weight:600;margin-top:3px;letter-spacing:.3px}
+/* hint discret */
+.swipe-hint{text-align:center;font-size:11px;color:var(--txt3);margin-bottom:10px;
+  display:flex;align-items:center;justify-content:center;gap:5px}
+
+/* CLOUD */
+.ccloud{background:var(--card);border-radius:var(--r);border:1px solid var(--border);
+  padding:18px;margin-bottom:13px}
+.ccloud h3{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;margin-bottom:7px}
+.ccloud p{font-size:13px;color:var(--txt2);line-height:1.65;margin-bottom:13px}
+.pbtn{width:100%;padding:13px;border-radius:var(--r);
+  background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;
+  font-family:'Inter',sans-serif;font-weight:600;font-size:14px;border:none;cursor:pointer;
+  box-shadow:var(--sh-acc);display:flex;align-items:center;justify-content:center;gap:7px;transition:all .18s}
+.pbtn:active{transform:scale(.97)}
+.sbtn{width:100%;padding:13px;border-radius:var(--r);background:transparent;color:var(--txt);
+  font-family:'Inter',sans-serif;font-weight:500;font-size:14px;border:1px solid var(--border);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .18s}
+.sbtn:active{background:var(--card2)}
+.stline{font-size:12px;color:var(--txt2);text-align:center;margin-top:9px}
+.stline.ok{color:var(--ok)}
+
+/* INSTALL BANNER */
+.ibanner{background:linear-gradient(135deg,rgba(232,64,28,.13),rgba(232,64,28,.04));
+  border:1px solid var(--border-acc);border-radius:var(--r);
+  padding:13px 15px;margin-bottom:18px;display:none;align-items:flex-start;gap:11px}
+.ibanner.vis{display:flex}
+.iico-b{font-size:20px;flex-shrink:0;margin-top:2px}
+.itxt{flex:1;font-size:12px;line-height:1.65;color:var(--txt2)}
+.itxt strong{color:var(--txt);display:block;margin-bottom:1px}
+.iclose{color:var(--txt3);font-size:17px;cursor:pointer;flex-shrink:0}
+
+/* MODAL */
+.moverlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(7px);z-index:200;
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .22s}
+.moverlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--card2);border-radius:20px 20px 0 0;width:100%;max-width:520px;
+  padding:18px 18px 36px;transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.moverlay.open .modal{transform:translateY(0)}
+.mhandle{width:34px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px}
+.modal h2{font-family:'Rajdhani',sans-serif;font-size:19px;font-weight:700;margin-bottom:16px}
+.fg{margin-bottom:13px}
+.flbl{font-size:11px;color:var(--txt2);font-weight:500;letter-spacing:.4px;
+  text-transform:uppercase;margin-bottom:5px;display:block}
+.finput,.fsel{width:100%;padding:11px 13px;background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--r2);color:var(--txt);font-family:'Inter',sans-serif;font-size:14px;
+  outline:none;transition:border-color .2s;-webkit-appearance:none}
+.finput:focus,.fsel:focus{border-color:var(--border-acc)}
+.finput.err{border-color:var(--acc)!important;animation:pulse-border .4s ease}
+@keyframes pulse-border{0%{box-shadow:0 0 0 0 rgba(232,64,28,.5)}100%{box-shadow:0 0 0 6px rgba(232,64,28,0)}}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.macts{display:flex;gap:9px;margin-top:18px}
+.macts .pbtn{flex:1;padding:12px}
+.cancbtn{padding:12px 16px;border-radius:var(--r);border:1px solid var(--border);
+  background:transparent;color:var(--txt2);font-size:14px;cursor:pointer}
+.ri-banner{background:rgba(232,64,28,0.1);border:1px solid var(--border-acc);
+  border-radius:var(--r2);padding:11px 13px;margin-bottom:14px;font-size:12px;
+  color:var(--txt2);line-height:1.6}
+.ri-banner strong{color:var(--acc2);display:block;margin-bottom:3px;font-size:13px}
+
+.empty{text-align:center;padding:44px 18px;color:var(--txt3)}
+.empty .eico{font-size:44px;margin-bottom:11px}
+.empty p{font-size:13px;line-height:1.6}
+
+.toast{position:fixed;top:96px;left:50%;transform:translateX(-50%) translateY(-16px);
+  background:var(--card2);border:1px solid var(--border);border-radius:100px;
+  padding:9px 18px;font-size:13px;font-weight:500;opacity:0;transition:all .25s;
+  z-index:300;white-space:nowrap;box-shadow:var(--sh)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="logo">W</div>
+    <h1>Stock <span>Camion</span></h1>
+  </div>
+  <div class="hdr-right">
+    <div class="ico-btn" id="searchToggleBtn" onclick="toggleSearch()">🔍</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- PAGE STOCK -->
+  <div class="page active" id="page-stock">
+    <div class="ibanner" id="installBanner">
+      <div class="iico-b">📲</div>
+      <div class="itxt"><strong>Installer sur l'écran d'accueil</strong>
+        Fichiers → appui long sur le .html → Partager → Ouvrir dans Safari → ⎋ Partager → "Sur l'écran d'accueil"</div>
+      <span class="iclose" onclick="this.parentElement.style.display='none'">✕</span>
+    </div>
+    <div class="sbar" id="searchBar" style="display:none">
+      <span class="sbar-ico">🔍</span>
+      <input type="text" id="searchInput" placeholder="Nom, référence…" oninput="onSearch()">
+      <button class="sbar-clear" onclick="clearSearch()">✕</button>
+    </div>
+    <div id="searchResults" style="display:none">
+      <div class="stitle">Résultats</div>
+      <div class="search-results" id="srList"></div>
+    </div>
+    <div id="stockView">
+      <div class="stats" id="statsStrip"></div>
+      <div class="stitle">Compartiments
+        <button class="abtn" onclick="openAddComp()">+ Compartiment</button>
+      </div>
+      <div class="comp-list" id="compList"></div>
+    </div>
+  </div>
+
+  <!-- PAGE ALERTES -->
+  <div class="page" id="page-alerts">
+    <div class="stitle">Alertes stock</div>
+    <div id="alertsList"></div>
+  </div>
+
+  <!-- PAGE HISTORIQUE -->
+  <div class="page" id="page-history">
+    <div class="stitle">Historique
+      <button class="abtn" style="background:var(--danger)" onclick="clearHistory()">Tout vider</button>
+    </div>
+    <div class="sbar" style="margin-bottom:10px">
+      <span class="sbar-ico">🔖</span>
+      <input type="text" id="riFilter" placeholder="Filtrer par n° RI…" oninput="renderHistory()">
+    </div>
+    <div class="swipe-hint">← Glisser vers la gauche pour supprimer un mouvement</div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- PAGE CLOUD -->
+  <div class="page" id="page-cloud">
+    <div class="ccloud">
+      <h3>💾 Sauvegarde Google Drive</h3>
+      <p>Exportez toutes vos données (compartiments, tiroirs, pièces, historique avec n° RI) dans un fichier JSON. Enregistrez-le dans Google Drive.</p>
+      <button class="pbtn" onclick="exportData()">☁️ Exporter la sauvegarde</button>
+      <div class="stline" id="exportStatus"></div>
+    </div>
+    <div class="ccloud">
+      <h3>📥 Restaurer une sauvegarde</h3>
+      <p>Importez un fichier .json exporté précédemment. <strong style="color:var(--danger)">Les données actuelles seront remplacées.</strong></p>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      <button class="sbtn" onclick="document.getElementById('importFile').click()">📂 Charger un fichier</button>
+    </div>
+    <div class="ccloud">
+      <h3>⚙️ À propos</h3>
+      <p>Gestion de stock de camion · Technicien Weishaupt<br>Version 3.1 · N° RI obligatoire sur retrait · Suppression individuelle de mouvement.</p>
+      <button class="sbtn" onclick="resetAll()" style="border-color:rgba(231,76,60,.4);color:var(--danger)">🗑️ Réinitialiser toutes les données</button>
+    </div>
+  </div>
+</div>
+
+<nav class="bnav">
+  <div class="nitem active" onclick="switchPage('stock',this)"><span class="ni">📦</span>Stock</div>
+  <div class="nitem" onclick="switchPage('alerts',this)">
+    <div class="nwrap"><span class="ni">⚠️</span><span class="nbadge" id="alertBadge">0</span></div>Alertes
+  </div>
+  <div class="nitem" onclick="switchPage('history',this)"><span class="ni">📋</span>Historique</div>
+  <div class="nitem" onclick="switchPage('cloud',this)"><span class="ni">☁️</span>Sauvegarde</div>
+</nav>
+
+<!-- MODAL RETRAIT RI -->
+<div class="moverlay" id="mRetrait" onclick="ovClose(event,'mRetrait')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2>Retrait de stock</h2>
+    <div class="ri-banner">
+      <strong>📋 N° RI obligatoire</strong>
+      Chaque retrait doit être rattaché à un Rapport d'Intervention pour la traçabilité.
+    </div>
+    <div class="fg">
+      <label class="flbl">Pièce</label>
+      <div id="retraitItemName" style="padding:10px 13px;background:var(--bg);border-radius:var(--r2);
+        font-size:13px;font-weight:500;border:1px solid var(--border)"></div>
+    </div>
+    <div class="fg">
+      <label class="flbl">N° RI — Rapport d'Intervention <span style="color:var(--acc)">*</span></label>
+      <input class="finput" id="riInput" placeholder="Ex : RI-2025-0042" autocapitalize="characters">
+    </div>
+    <div class="fg">
+      <label class="flbl">Quantité retirée</label>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="qbtn minus" onclick="adjRetraitQty(-1)" style="width:36px;height:36px;font-size:20px">−</button>
+        <span id="retraitQtyDisplay" style="font-family:Rajdhani,sans-serif;font-size:28px;font-weight:700;
+          min-width:40px;text-align:center;color:var(--danger)">1</span>
+        <button class="qbtn plus" onclick="adjRetraitQty(+1)" style="width:36px;height:36px;font-size:20px">+</button>
+        <span id="retraitStockInfo" style="font-size:12px;color:var(--txt2);margin-left:4px"></span>
+      </div>
+    </div>
+    <div class="macts">
+      <button class="cancbtn" onclick="closeM('mRetrait')">Annuler</button>
+      <button class="pbtn" onclick="confirmRetrait()" style="background:linear-gradient(135deg,var(--danger),#c0392b)">
+        📤 Confirmer le retrait
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COMPARTIMENT -->
+<div class="moverlay" id="mComp" onclick="ovClose(event,'mComp')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="mCompTitle">Nouveau compartiment</h2>
+    <div class="fg"><label class="flbl">Emoji / Icône</label>
+      <input class="finput" id="cEmoji" placeholder="🚐" maxlength="4"></div>
+    <div class="fg"><label class="flbl">Nom du compartiment</label>
+      <input class="finput" id="cName" placeholder="Ex : Porte latérale"></div>
+    <div class="macts">
+      <button class="cancbtn" onclick="closeM('mComp')">Annuler</button>
+      <button class="pbtn" onclick="saveComp()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TIROIR -->
+<div class="moverlay" id="mTiroir" onclick="ovClose(event,'mTiroir')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="mTiroirTitle">Nouveau tiroir</h2>
+    <div class="fg"><label class="flbl">Nom du tiroir</label>
+      <input class="finput" id="tName" placeholder="Ex : Électrodes allumage"></div>
+    <div class="fg"><label class="flbl">Compartiment</label>
+      <select class="fsel" id="tComp"></select></div>
+    <div class="macts">
+      <button class="cancbtn" onclick="closeM('mTiroir')">Annuler</button>
+      <button class="pbtn" onclick="saveTiroir()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PIÈCE -->
+<div class="moverlay" id="mItem" onclick="ovClose(event,'mItem')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="mItemTitle">Nouvelle pièce</h2>
+    <div class="fg"><label class="flbl">Désignation</label>
+      <input class="finput" id="iName" placeholder="Ex : Électrode allumage WL10"></div>
+    <div class="fg"><label class="flbl">Référence / N° pièce</label>
+      <input class="finput" id="iRef" placeholder="Ex : 230 60 9046"></div>
+    <div class="frow">
+      <div class="fg"><label class="flbl">Qté actuelle</label>
+        <input class="finput" id="iQty" type="number" min="0" placeholder="0"></div>
+      <div class="fg"><label class="flbl">Seuil alerte</label>
+        <input class="finput" id="iMin" type="number" min="0" placeholder="1"></div>
+    </div>
+    <div class="fg"><label class="flbl">Compartiment</label>
+      <select class="fsel" id="iComp" onchange="refreshTiroirSel(null)"></select></div>
+    <div class="fg"><label class="flbl">Tiroir</label>
+      <select class="fsel" id="iTiroir"></select></div>
+    <div class="macts">
+      <button class="cancbtn" onclick="closeM('mItem')">Annuler</button>
+      <button class="pbtn" onclick="saveItem()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETAIL -->
+<div class="moverlay" id="mDetail" onclick="ovClose(event,'mDetail')">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <h2 id="detTitle"></h2>
+    <div id="detBody"></div>
+    <div class="macts" style="margin-top:14px">
+      <button class="cancbtn" onclick="closeM('mDetail')">Fermer</button>
+      <button class="pbtn" id="detEditBtn">✏️ Modifier</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ DATA ═══
+const LS='wsh_stock_v4';
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+
+function defaultData(){
+  const comps=[
+    {id:uid(),name:'Porte latérale',emoji:'🚪',open:false},
+    {id:uid(),name:'Tiroir droit',emoji:'➡️',open:false},
+    {id:uid(),name:'Tiroir gauche',emoji:'⬅️',open:false},
+    {id:uid(),name:'Casier',emoji:'🗄️',open:false},
+  ];
+  const tiroirs=[];
+  ['T1','T2','T3','T4','T5'].forEach(n=>tiroirs.push({id:uid(),name:n,compId:comps[0].id,open:false}));
+  for(let i=1;i<=8;i++) tiroirs.push({id:uid(),name:'T'+i,compId:comps[1].id,open:false});
+  for(let i=1;i<=8;i++) tiroirs.push({id:uid(),name:'T'+i,compId:comps[2].id,open:false});
+  for(let i=1;i<=12;i++) tiroirs.push({id:uid(),name:'C'+i,compId:comps[3].id,open:false});
+  return {comps,tiroirs,items:[],history:[]};
+}
+
+function load(){try{return JSON.parse(localStorage.getItem(LS))||defaultData();}catch(e){return defaultData();}}
+function save(){localStorage.setItem(LS,JSON.stringify(db));}
+let _preloaded = {"comps": [{"id": "c000", "name": "Porte latérale", "emoji": "🚪", "open": false}, {"id": "c001", "name": "Tiroir droit", "emoji": "➡️", "open": false}, {"id": "c002", "name": "Tiroir gauche", "emoji": "⬅️", "open": false}, {"id": "c003", "name": "Casier", "emoji": "🗄️", "open": false}], "tiroirs": [{"id": "t000", "name": "C12", "compId": "c003", "open": false}, {"id": "t001", "name": "C10", "compId": "c003", "open": false}, {"id": "t002", "name": "C3", "compId": "c003", "open": false}, {"id": "t003", "name": "T6", "compId": "c002", "open": false}, {"id": "t004", "name": "T2", "compId": "c002", "open": false}, {"id": "t005", "name": "T5", "compId": "c001", "open": false}, {"id": "t006", "name": "T3", "compId": "c001", "open": false}, {"id": "t007", "name": "T2", "compId": "c001", "open": false}, {"id": "t008", "name": "T1", "compId": "c001", "open": false}, {"id": "t009", "name": "T5", "compId": "c000", "open": false}, {"id": "t010", "name": "T4", "compId": "c000", "open": false}, {"id": "t011", "name": "T3", "compId": "c000", "open": false}, {"id": "t012", "name": "T2", "compId": "c000", "open": false}], "items": [{"id": "i0000", "name": "Circulateur UPM3 15-70 GGMBP3 AZA", "ref": "48101140252", "qty": 1, "min": 1, "tiroirId": "t000"}, {"id": "i0001", "name": "Bloc gaz WTC 25-A", "ref": "48111130222", "qty": 1, "min": 1, "tiroirId": "t001"}, {"id": "i0002", "name": "Arrache-turbine LM1-LMS8, G1-G8, GR. 40", "ref": "11111100012", "qty": 1, "min": 1, "tiroirId": "t002"}, {"id": "i0003", "name": "Arrache-turbine Gr.9-11, 50-70, WM50", "ref": "25051400012", "qty": 1, "min": 1, "tiroirId": "t002"}, {"id": "i0004", "name": "WEM-SG 2.5 cpl avec carte SD", "ref": "48301122522", "qty": 2, "min": 1, "tiroirId": "t003"}, {"id": "i0005", "name": "Appareil d'ambiance WEM-RG2 2.4 WTC-G-B", "ref": "48300000432", "qty": 2, "min": 1, "tiroirId": "t004"}, {"id": "i0006", "name": "Set adaptation WEM-CAN 2-pôles pour RG2", "ref": "48300000222", "qty": 2, "min": 1, "tiroirId": "t004"}, {"id": "i0007", "name": "Gicleur ST 60 0,40 GPH Steinen", "ref": "612198", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0008", "name": "Gicleur S 60 0,60 GPH Steinen", "ref": "612201", "qty": 6, "min": 1, "tiroirId": "t005"}, {"id": "i0009", "name": "Gicleur ST 60 0,55 GPH Steinen", "ref": "612202", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0010", "name": "Gicleur S 60 0,75 GPH Steinen", "ref": "612203", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0011", "name": "Gicleur S 60 0,85 GPH Steinen", "ref": "612206", "qty": 1, "min": 1, "tiroirId": "t005"}, {"id": "i0012", "name": "Gicleur S 60 1,00 GPH Steinen", "ref": "612207", "qty": 3, "min": 1, "tiroirId": "t005"}, {"id": "i0013", "name": "Gicleur S 60 1,1 GPH Steinen", "ref": "612208", "qty": 0, "min": 1, "tiroirId": "t005"}, {"id": "i0014", "name": "Gicleur S 60 1,25 GPH Steinen", "ref": "612210", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0015", "name": "Gicleur S 60 1,50 GPH Steinen", "ref": "612212", "qty": 4, "min": 1, "tiroirId": "t005"}, {"id": "i0016", "name": "Gicleur S 60 2,00 GPH Steinen", "ref": "612216", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0017", "name": "Gicleur S 60 2,25 GPH Steinen", "ref": "612217", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0018", "name": "Gicleur S 60 2,75 GPH Steinen", "ref": "612218", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0019", "name": "Gicleur S 60 3,00 GPH Steinen", "ref": "612219", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0020", "name": "Gicleur S 60 3,50 GPH Steinen", "ref": "612220", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0021", "name": "Gicleur S 60 4,00 GPH Steinen", "ref": "612221", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0022", "name": "Gicleur SS 60 4,50 GPH Steinen", "ref": "612222", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0023", "name": "Gicleur S 60 5,00 GPH Steinen", "ref": "612223", "qty": 1, "min": 1, "tiroirId": "t005"}, {"id": "i0024", "name": "Gicleur SS 60 5,50 GPH Steinen", "ref": "612224", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0025", "name": "Gicleur SS 60 7,00 GPH Steinen", "ref": "612227", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0026", "name": "Gicleur S 60 2,50 GPH Steinen", "ref": "612251", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0027", "name": "Gicleur HT 60 0,50 GPH Steinen", "ref": "612352", "qty": 2, "min": 1, "tiroirId": "t005"}, {"id": "i0028", "name": "Manager W-FM25 IB 230V au lieu W-FM20/24", "ref": "23030100440", "qty": 1, "min": 1, "tiroirId": "t006"}, {"id": "i0029", "name": "Flexible fioul DN 4 1200 mm, d'un côté", "ref": "491126", "qty": 2, "min": 1, "tiroirId": "t007"}, {"id": "i0030", "name": "Elément filtrant n° 6 pour pompe Suntec", "ref": "601107", "qty": 3, "min": 1, "tiroirId": "t007"}, {"id": "i0031", "name": "Pompe ALEV30C 9300 4P0700R 4-18 bar", "ref": "601857", "qty": 1, "min": 1, "tiroirId": "t007"}, {"id": "i0032", "name": "Pompe ALV30C 9611 4P0700R 4-18 bar", "ref": "601858", "qty": 2, "min": 1, "tiroirId": "t007"}, {"id": "i0033", "name": "Pompe ALV65C 9609 6P0700R", "ref": "601860", "qty": 1, "min": 1, "tiroirId": "t007"}, {"id": "i0034", "name": "Pièce d'acc. pour moteur ECK02 à ECK06", "ref": "652135", "qty": 4, "min": 1, "tiroirId": "t007"}, {"id": "i0035", "name": "WFM10", "ref": "600475", "qty": 3, "min": 1, "tiroirId": "t008"}, {"id": "i0036", "name": "WFM5", "ref": "600470", "qty": 3, "min": 1, "tiroirId": "t008"}, {"id": "i0037", "name": "Ecrou rondelle M 6", "ref": "412508", "qty": 3, "min": 1, "tiroirId": "t009"}, {"id": "i0038", "name": "Vis pointeau 6 x 30-A3K  DIN 949-B MFS", "ref": "471230", "qty": 7, "min": 1, "tiroirId": "t009"}, {"id": "i0039", "name": "Dégazeur G3/8 sans vanne d'isolement", "ref": "662032", "qty": 1, "min": 1, "tiroirId": "t009"}, {"id": "i0040", "name": "Soupape de sécurité 3 bar Rp 1/2", "ref": "48000007827", "qty": 1, "min": 1, "tiroirId": "t009"}, {"id": "i0041", "name": "Joint de couvercle d'entretien WTC 15-A", "ref": "48101130057", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0042", "name": "Joint de brûleur WTC 15-A", "ref": "48101130147", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0043", "name": "Electrode d'ionisation WTC15/25/32-A", "ref": "48101130162", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0044", "name": "Electrode d'allumage WTC15 à 32-A", "ref": "48101130172", "qty": 6, "min": 1, "tiroirId": "t009"}, {"id": "i0045", "name": "Electrode d'allumage WTC 15/25-A", "ref": "48101130227", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0046", "name": "Sonde de fumées NTC WTC 15/25-A", "ref": "48101130267", "qty": 1, "min": 1, "tiroirId": "t009"}, {"id": "i0047", "name": "Brûleur surfacique WTC 15-A", "ref": "48101130492", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0048", "name": "Servo-moteur VC6012ZZ00E 230V", "ref": "48101240037", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0049", "name": "Support de vanne VCZPA6036 avec joint", "ref": "48101240072", "qty": 1, "min": 1, "tiroirId": "t009"}, {"id": "i0050", "name": "Joint de couvercle d'entretien WTC 25/32", "ref": "48111130057", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0051", "name": "Joint de brûleur WTC 25/32-A", "ref": "48111130147", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0052", "name": "Brûleur surfacique WTC 25/32-A", "ref": "48111130492", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0053", "name": "Joint de couvercle entretien WTC45/60-A", "ref": "48140130057", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0054", "name": "Electrode d'ionisation WTC45-60-A", "ref": "48140130082", "qty": 1, "min": 1, "tiroirId": "t009"}, {"id": "i0055", "name": "Brûleur surfacique WTC 45-A", "ref": "48140130157", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0056", "name": "Electrode d'allumage WTC45/60-A", "ref": "48140130162", "qty": 3, "min": 1, "tiroirId": "t009"}, {"id": "i0057", "name": "Brûleur surfacique WTC 60-A", "ref": "48160130157", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0058", "name": "Joint capot brûleur WTC 60-A", "ref": "48161130077", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0059", "name": "Electrode d'allumage WTC-GB-A", "ref": "48200130262", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0060", "name": "Electrode d'ionisation WTC-GB-A", "ref": "48210130082", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0061", "name": "WEM-FA-G 2.4 cassette-WTC G 15-32 B", "ref": "48301122232", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0062", "name": "Electrode d'ionisation WTC-GW 15-32-B", "ref": "48301130162", "qty": 3, "min": 1, "tiroirId": "t009"}, {"id": "i0063", "name": "Set transf. allum WTC-G15-32B et 80-100A", "ref": "48301130412", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0064", "name": "Sonde multifonction VPT2 chauffage", "ref": "48301140102", "qty": 2, "min": 1, "tiroirId": "t009"}, {"id": "i0065", "name": "Joint torique 36x2 EPDM70", "ref": "48360440257", "qty": 3, "min": 1, "tiroirId": "t009"}, {"id": "i0066", "name": "Joint torique 30 X 3-N EPDM 70 DIN 3771", "ref": "445166", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0067", "name": "Raccord  R 1/8 WES4", "ref": "453003", "qty": 1, "min": 1, "tiroirId": "t010"}, {"id": "i0068", "name": "Filtre Z 500 st G3/8 bi-tubes", "ref": "493388", "qty": 1, "min": 1, "tiroirId": "t010"}, {"id": "i0069", "name": "ABE pour W-FM25", "ref": "600481", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0070", "name": "Elément filtrant n° 6 pour pompe Suntec", "ref": "601107", "qty": 5, "min": 1, "tiroirId": "t010"}, {"id": "i0071", "name": "Allumeur type W-ZG01  230V 100VA", "ref": "603201", "qty": 4, "min": 1, "tiroirId": "t010"}, {"id": "i0072", "name": "Servo-moteur W-St02/2 220-240V 50Hz", "ref": "651049", "qty": 1, "min": 1, "tiroirId": "t010"}, {"id": "i0073", "name": "Moteur pas à pas gaz STE 4,5 24V", "ref": "651101", "qty": 5, "min": 1, "tiroirId": "t010"}, {"id": "i0074", "name": "Moteur pas à pas STD 4,5 24V", "ref": "651102", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0075", "name": "Moteur pas à pas air STE 4,5 24V", "ref": "651103", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0076", "name": "Régulateur de puissance KS20-108 100-240", "ref": "690441", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0077", "name": "Pressostat LGW  10 A2  1  -  10 mbar", "ref": "691370", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0078", "name": "Electrode all. Isol. 6x80", "ref": "13210114037", "qty": 21, "min": 1, "tiroirId": "t010"}, {"id": "i0079", "name": "sonde ionisation, isolat. 6X80 G7, G30,", "ref": "13210114047", "qty": 9, "min": 1, "tiroirId": "t010"}, {"id": "i0080", "name": "Electrode ionisation ø11x145/50 w.G40/70", "ref": "15124314137", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0081", "name": "Electrode allumage", "ref": "15124314147", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0082", "name": "Elect.Allum.WGL30P,GL1-9L,G1-8,R,GL3/1-E", "ref": "15132714337", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0083", "name": "Electrode ionisation G1-G7", "ref": "15132714347", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0084", "name": "Electrode ionisation G8", "ref": "15132714357", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0085", "name": "Electrode all. gauche  L1Z,L3Z,L9Z", "ref": "21116310117", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0086", "name": "Electrode all. droite L1Z,L3Z,L9Z", "ref": "21116310127", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0087", "name": "Electrode d'allumage gauche", "ref": "21140410207", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0088", "name": "Electrode d'allumage droite", "ref": "21140410217", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0089", "name": "Electrode d'ionisation WM-G10 ZM-3LN", "ref": "21710614057", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0090", "name": "Electrode allumage G40-70 exéc. LN", "ref": "21740514167", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0091", "name": "Electrode d'allumage Gr.30/2 à 70/1 -3LN", "ref": "21830514062", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0092", "name": "Pressostat LGW 3A1 complet", "ref": "23005024042", "qty": 1, "min": 1, "tiroirId": "t010"}, {"id": "i0093", "name": "Manager W-FM25 IB 230V au lieu W-FM20/24", "ref": "23030100440", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0094", "name": "Etrier de montage W-FM25 avec contacteur", "ref": "23030100430", "qty": 1, "min": 1, "tiroirId": "t010"}, {"id": "i0095", "name": "Electrode ionisation WG5-WG40, G1-G5 LN", "ref": "23210014207", "qty": 1, "min": 1, "tiroirId": "t010"}, {"id": "i0096", "name": "Electrode allumage WG5-40 isolant 6 x 80", "ref": "23220014217", "qty": 15, "min": 1, "tiroirId": "t010"}, {"id": "i0097", "name": "Réglage manuel W5, W10C, W20C", "ref": "24105002022", "qty": 1, "min": 1, "tiroirId": "t010"}, {"id": "i0098", "name": "Electrode d'allumage WL5 jusque WL10-D", "ref": "24105010137", "qty": 6, "min": 1, "tiroirId": "t010"}, {"id": "i0099", "name": "Cellule QRB4B 420mm WL5-WL20", "ref": "24105012072", "qty": 1, "min": 1, "tiroirId": "t010"}, {"id": "i0100", "name": "Électrode allumage WL20/1-C WL10/2-D 1LN", "ref": "24120014527", "qty": 3, "min": 1, "tiroirId": "t010"}, {"id": "i0101", "name": "Cellule QRB4A 420mm WL20-WL40", "ref": "24121012052", "qty": 1, "min": 1, "tiroirId": "t010"}, {"id": "i0102", "name": "Cellule QRB1B WL5-WL20", "ref": "24131012022", "qty": 2, "min": 1, "tiroirId": "t010"}, {"id": "i0103", "name": "Cartouche filtre Type 500/GS2000", "ref": "46201130187", "qty": 1, "min": 1, "tiroirId": "t010"}, {"id": "i0104", "name": "Fiche mâle d'allumage Gr.1-70, WM", "ref": "716500", "qty": 2, "min": 1, "tiroirId": "t011"}, {"id": "i0105", "name": "Prise femelle Gr. 1-70, Brûleurs WM", "ref": "716501", "qty": 2, "min": 1, "tiroirId": "t011"}, {"id": "i0106", "name": "Câble d'ionisation 600 mm", "ref": "21710417022", "qty": 2, "min": 1, "tiroirId": "t011"}, {"id": "i0107", "name": "Câble ionisation 600 mm 6,2/6,4", "ref": "21710514532", "qty": 2, "min": 1, "tiroirId": "t011"}, {"id": "i0108", "name": "Câble all.- ionisation WG10/20 380mm lg", "ref": "23211011032", "qty": 2, "min": 1, "tiroirId": "t011"}, {"id": "i0109", "name": "Câble ionisation n° 13 WG5, WG30, WG40", "ref": "23231012012", "qty": 3, "min": 1, "tiroirId": "t011"}, {"id": "i0110", "name": "Ens. transfo câble d'ionis. BERU en BREM", "ref": "25010112012", "qty": 2, "min": 1, "tiroirId": "t011"}, {"id": "i0111", "name": "Câble d'allumage 1250 mm silicone noir", "ref": "603158", "qty": 2, "min": 1, "tiroirId": "t012"}, {"id": "i0112", "name": "Câble all.silicone FZL 2G 1,0 rouge/brun", "ref": "743202", "qty": 2, "min": 1, "tiroirId": "t012"}, {"id": "i0113", "name": "Câble d'allumage 600 mm 14 / 6,4", "ref": "21710411072", "qty": 2, "min": 1, "tiroirId": "t012"}, {"id": "i0114", "name": "Câble d'allumage 600mm 6,2/4,1", "ref": "21810411022", "qty": 2, "min": 1, "tiroirId": "t012"}, {"id": "i0115", "name": "Câble all. et ionisation WG30  900mm lg", "ref": "23031011192", "qty": 0, "min": 1, "tiroirId": "t012"}, {"id": "i0116", "name": "Kit câbles d'allumage WG30C", "ref": "23031100010", "qty": 1, "min": 1, "tiroirId": "t012"}, {"id": "i0117", "name": "Kit câbles d'allumage WG30C", "ref": "23031100020", "qty": 1, "min": 1, "tiroirId": "t012"}, {"id": "i0118", "name": "Kit câbles d'allumage WG30C", "ref": "23031100030", "qty": 1, "min": 1, "tiroirId": "t012"}, {"id": "i0119", "name": "Câble d'allum. + ionisation WG30-A 550mm", "ref": "23230011092", "qty": 4, "min": 1, "tiroirId": "t012"}, {"id": "i0120", "name": "Cable d'allumage WG 40 700mm long", "ref": "23240011052", "qty": 1, "min": 1, "tiroirId": "t012"}, {"id": "i0121", "name": "Câble d'allumage WL30C Lg 800mm", "ref": "24031011092", "qty": 1, "min": 1, "tiroirId": "t012"}, {"id": "i0122", "name": "Cable d'allumage WL10/20 lg 380mm", "ref": "24111011032", "qty": 5, "min": 1, "tiroirId": "t012"}, {"id": "i0123", "name": "Câble d'allumage WL10, WL15, WL20 350 mm", "ref": "24120011082", "qty": 2, "min": 1, "tiroirId": "t012"}, {"id": "i0124", "name": "Câble d'allumage WL30 / WL20C lg. 600 mm", "ref": "24131011042", "qty": 3, "min": 1, "tiroirId": "t012"}], "history": []};
+
+// Si aucune donnée locale, charger les données Excel pré-importées
+let db = (()=>{
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS));
+    if (saved && saved.items && saved.items.length > 0) return saved;
+    // Première utilisation : charger les données Excel
+    localStorage.setItem(LS, JSON.stringify(_preloaded));
+    return _preloaded;
+  } catch(e) { return _preloaded; }
+})();
+let editCompId=null,editTiroirId=null,editItemId=null;
+let retraitItemId=null,retraitQty=1;
+
+// ═══ NAV ═══
+function switchPage(p,el){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nitem').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  el.classList.add('active');
+  if(p==='alerts') renderAlerts();
+  if(p==='history') renderHistory();
+  if(p==='stock') renderAll();
+}
+
+// ═══ SEARCH ═══
+function toggleSearch(){
+  const bar=document.getElementById('searchBar');
+  const btn=document.getElementById('searchToggleBtn');
+  const isOpen=bar.style.display!=='none';
+  bar.style.display=isOpen?'none':'block';
+  btn.classList.toggle('active-search',!isOpen);
+  if(!isOpen) document.getElementById('searchInput').focus();
+  else clearSearch();
+}
+function clearSearch(){
+  document.getElementById('searchInput').value='';
+  document.getElementById('searchResults').style.display='none';
+  document.getElementById('stockView').style.display='block';
+  document.getElementById('searchToggleBtn').classList.remove('active-search');
+  document.getElementById('searchBar').style.display='none';
+}
+function onSearch(){
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  const srDiv=document.getElementById('searchResults');
+  const stockView=document.getElementById('stockView');
+  if(!q){srDiv.style.display='none';stockView.style.display='block';return;}
+  srDiv.style.display='block';stockView.style.display='none';
+  const results=db.items.filter(i=>i.name.toLowerCase().includes(q)||(i.ref||'').toLowerCase().includes(q));
+  const list=document.getElementById('srList');
+  if(!results.length){
+    list.innerHTML=`<div class="empty" style="padding:24px 0"><div class="eico">🔍</div><p>Aucun résultat pour "<strong>${q}</strong>"</p></div>`;return;
+  }
+  const hl=(str,q)=>str.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`,'gi'),'<mark style="background:rgba(232,64,28,0.3);color:var(--acc2);border-radius:2px">$1</mark>');
+  list.innerHTML=results.map(item=>{
+    const t=db.tiroirs.find(x=>x.id===item.tiroirId);
+    const c=t?db.comps.find(x=>x.id===t.compId):null;
+    const dc=item.qty<=0?'d':item.qty<=item.min?'w':'';
+    return `<div class="sr-card" onclick="showDetail('${item.id}')">
+      <div class="sr-dot ${dc}"></div>
+      <div class="sr-info">
+        <div class="sr-name">${hl(item.name,q)}</div>
+        <div class="sr-sub">${item.ref?`<span>${hl(item.ref,q)}</span> · `:''} ${c?c.emoji+' '+c.name+' › ':''} ${t?t.name:'—'}</div>
+        <div class="sr-sub">Seuil min : ${item.min}</div>
+      </div>
+      <div><div class="sr-qty ${dc}">${item.qty}</div>
+        <div style="font-size:10px;color:var(--txt2);text-align:right">en stock</div></div>
+    </div>`;
+  }).join('');
+}
+
+// ═══ RENDER STOCK ═══
+function renderAll(){renderStats();renderComps();updateBadge();}
+function renderStats(){
+  const t=db.items.length,d=db.items.filter(i=>i.qty<=0).length,
+        w=db.items.filter(i=>i.qty>0&&i.qty<=i.min).length;
+  document.getElementById('statsStrip').innerHTML=
+    `<div class="scard"><div class="sv">${t}</div><div class="sl">Références</div></div>
+     <div class="scard d"><div class="sv">${d}</div><div class="sl">Rupture</div></div>
+     <div class="scard w"><div class="sv">${w}</div><div class="sl">Stock faible</div></div>
+     <div class="scard o"><div class="sv">${t-d-w}</div><div class="sl">Disponibles</div></div>`;
+}
+function updateBadge(){
+  const n=db.items.filter(i=>i.qty<=i.min).length;
+  const b=document.getElementById('alertBadge');
+  b.style.display=n>0?'block':'none';b.textContent=n;
+}
+function renderComps(){
+  let html='';
+  db.comps.forEach(comp=>{
+    const cTiroirs=db.tiroirs.filter(t=>t.compId===comp.id);
+    const allItems=db.items.filter(i=>cTiroirs.some(t=>t.id===i.tiroirId));
+    const alerts=allItems.filter(i=>i.qty<=i.min).length;
+    const isOpen=comp.open;
+    html+=`<div class="comp-card ${alerts>0?'has-alert':''} ${isOpen?'open':''}" id="comp-${comp.id}">
+      <div class="comp-hdr" onclick="toggleComp('${comp.id}')">
+        <span class="comp-ico">${comp.emoji||'📦'}</span>
+        <div class="comp-info">
+          <div class="comp-name">${comp.name}</div>
+          <div class="comp-meta">${cTiroirs.length} tiroir${cTiroirs.length!==1?'s':''} · ${allItems.length} pièce${allItems.length!==1?'s':''}</div>
+        </div>
+        ${alerts>0?`<span class="cbadge alert">⚠ ${alerts}</span>`:`<span class="cbadge ok">✓</span>`}
+        <span class="comp-chev">▼</span>
+      </div>`;
+    if(isOpen){
+      html+=`<div class="tiroir-list">`;
+      cTiroirs.forEach(t=>{
+        const tItems=db.items.filter(i=>i.tiroirId===t.id);
+        const tAlerts=tItems.filter(i=>i.qty<=i.min).length;
+        const tOpen=t.open;
+        html+=`<div class="tiroir-row ${tOpen?'open':''}" id="t-${t.id}">
+          <div class="tiroir-hdr" onclick="toggleTiroir('${t.id}')">
+            <span style="font-size:13px;color:var(--txt3)">▸</span>
+            <span class="tiroir-label">${t.name}</span>
+            <span class="tiroir-count">${tItems.length} pièce${tItems.length!==1?'s':''}</span>
+            ${tAlerts>0?`<span class="tiroir-badge">⚠ ${tAlerts}</span>`:''}
+            <span class="tiroir-chev">▾</span>
+          </div>`;
+        if(tOpen){
+          html+=`<div class="items-wrap">`;
+          if(tItems.length===0){
+            html+=`<div style="padding:12px 15px;font-size:12px;color:var(--txt3);text-align:center">
+              Tiroir vide — <span style="color:var(--acc);cursor:pointer" onclick="openAddItem('${t.id}')">Ajouter une pièce</span></div>`;
+          } else {
+            tItems.forEach(item=>{
+              const dc=item.qty<=0?'d':item.qty<=item.min?'w':'';
+              html+=`<div class="irow">
+                <div class="idot ${dc}"></div>
+                <div class="iinfo" onclick="showDetail('${item.id}')">
+                  <div class="iname">${item.name}</div>
+                  <div class="imeta">${item.ref||'Pas de référence'}</div>
+                </div>
+                <div class="iqty-ctrl">
+                  <button class="qbtn minus" onclick="openRetrait('${item.id}')">−</button>
+                  <span class="qdsp ${dc}">${item.qty}</span>
+                  <button class="qbtn plus" onclick="addOne('${item.id}')">+</button>
+                </div>
+                <div class="iacts">
+                  <button class="iact" onclick="openEditItem('${item.id}')">✏️</button>
+                  <button class="iact del" onclick="delItem('${item.id}')">🗑️</button>
+                </div>
+              </div>`;
+            });
+          }
+          html+=`<div class="add-item-row"><button onclick="openAddItem('${t.id}')">+ Ajouter une pièce</button></div>`;
+          html+=`</div>`;
+          html+=`<div class="tiroir-actions-bar">
+            <button class="tact-btn" onclick="openEditTiroir('${t.id}')">✏️ Renommer</button>
+            <button class="tact-btn del" onclick="delTiroir('${t.id}')">🗑️ Supprimer</button>
+          </div>`;
+        }
+        html+=`</div>`;
+      });
+      html+=`<div class="add-tiroir-row"><button onclick="openAddTiroir('${comp.id}')">+ Ajouter un tiroir</button></div>`;
+      html+=`</div>`;
+      html+=`<div class="comp-actions">
+        <button class="cact-btn" onclick="openEditComp('${comp.id}')">✏️ Renommer</button>
+        <button class="cact-btn del" onclick="delComp('${comp.id}')">🗑️ Supprimer</button>
+      </div>`;
+    }
+    html+=`</div>`;
+  });
+  if(!html) html=`<div class="empty"><div class="eico">📭</div><p>Aucun compartiment.</p></div>`;
+  document.getElementById('compList').innerHTML=html;
+}
+function toggleComp(id){const c=db.comps.find(x=>x.id===id);if(c){c.open=!c.open;save();renderAll();}}
+function toggleTiroir(id){const t=db.tiroirs.find(x=>x.id===id);if(t){t.open=!t.open;save();renderAll();}}
+
+// ═══ RETRAIT RI ═══
+function openRetrait(itemId){
+  const item=db.items.find(i=>i.id===itemId);
+  if(!item||item.qty<=0){toast('⚠️ Stock déjà à zéro');return;}
+  retraitItemId=itemId;retraitQty=1;
+  document.getElementById('retraitItemName').textContent=item.name+(item.ref?' — '+item.ref:'');
+  document.getElementById('riInput').value='';
+  document.getElementById('retraitQtyDisplay').textContent='1';
+  document.getElementById('retraitStockInfo').textContent='Stock actuel : '+item.qty;
+  openM('mRetrait');
+  setTimeout(()=>document.getElementById('riInput').focus(),320);
+}
+function adjRetraitQty(d){
+  const item=db.items.find(i=>i.id===retraitItemId);if(!item)return;
+  retraitQty=Math.max(1,Math.min(item.qty,retraitQty+d));
+  document.getElementById('retraitQtyDisplay').textContent=retraitQty;
+}
+function confirmRetrait(){
+  const ri=document.getElementById('riInput').value.trim();
+  if(!ri){
+    const inp=document.getElementById('riInput');
+    inp.classList.add('err');setTimeout(()=>inp.classList.remove('err'),600);
+    toast('⚠️ Le n° RI est obligatoire');return;
+  }
+  const item=db.items.find(i=>i.id===retraitItemId);if(!item)return;
+  const before=item.qty;
+  item.qty=Math.max(0,item.qty-retraitQty);
+  db.history.unshift({id:uid(),name:item.name,tiroirId:item.tiroirId,
+    delta:-retraitQty,before,after:item.qty,ri,ts:Date.now()});
+  if(db.history.length>300) db.history=db.history.slice(0,300);
+  save();closeM('mRetrait');renderAll();
+  toast(`📤 Retrait enregistré — RI : ${ri}`);
+}
+function addOne(itemId){
+  const item=db.items.find(i=>i.id===itemId);if(!item)return;
+  const before=item.qty;item.qty++;
+  db.history.unshift({id:uid(),name:item.name,tiroirId:item.tiroirId,
+    delta:1,before,after:item.qty,ri:null,ts:Date.now()});
+  if(db.history.length>300) db.history=db.history.slice(0,300);
+  save();renderAll();
+}
+
+// ═══ ALERTS ═══
+function renderAlerts(){
+  const alerts=db.items.filter(i=>i.qty<=i.min).sort((a,b)=>a.qty-b.qty);
+  const el=document.getElementById('alertsList');
+  if(!alerts.length){el.innerHTML=`<div class="empty"><div class="eico">✅</div><p>Aucune alerte.</p></div>`;return;}
+  el.innerHTML=alerts.map(item=>{
+    const t=db.tiroirs.find(x=>x.id===item.tiroirId);
+    const c=t?db.comps.find(x=>x.id===t.compId):null;
+    const isDanger=item.qty<=0;
+    return `<div class="alert-card ${isDanger?'':'w'}">
+      <div class="aico">${isDanger?'🔴':'🟡'}</div>
+      <div class="ainfo">
+        <div class="aname">${item.name}</div>
+        <div class="adtl">${c?c.emoji+' '+c.name:''} › ${t?t.name:''}</div>
+        <div class="adtl">Réf : ${item.ref||'—'} · Seuil min : ${item.min}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="aqty">${item.qty}</div>
+        <div style="font-size:10px;color:var(--txt2)">en stock</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══ HISTORY + SWIPE DELETE ═══
+function renderHistory(){
+  const riF=(document.getElementById('riFilter')?.value||'').trim().toLowerCase();
+  let hist=db.history;
+  if(riF) hist=hist.filter(h=>h.ri&&h.ri.toLowerCase().includes(riF));
+  const el=document.getElementById('historyList');
+  if(!hist.length){
+    el.innerHTML=`<div class="empty"><div class="eico">${riF?'🔖':'📋'}</div><p>${riF?`Aucun mouvement pour RI "<strong>${riF}</strong>"`:'Aucun mouvement enregistré.'}</p></div>`;return;
+  }
+  el.innerHTML=hist.map(h=>{
+    const t=db.tiroirs.find(x=>x.id===h.tiroirId);
+    const c=t?db.comps.find(x=>x.id===t.compId):null;
+    const d=new Date(h.ts);
+    const fmt=d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="h-wrapper" id="hw-${h.id}">
+      <div class="h-delete-bg"><span>🗑️</span></div>
+      <div class="hitem" data-hid="${h.id}">
+        <div class="hico">${h.delta>0?'📥':'📤'}</div>
+        <div class="hinf">
+          <div class="hname">${h.name}</div>
+          <div class="hmeta">${c?c.emoji+' '+c.name+' › ':''} ${t?t.name:''}</div>
+          <div class="hmeta">${fmt} · ${h.before} → ${h.after}</div>
+          ${h.ri?`<span class="ri-tag">📋 RI : ${h.ri}</span>`:''}
+        </div>
+        <div class="hdelta ${h.delta>0?'p':'m'}">${h.delta>0?'+':''}${h.delta}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Attacher swipe sur chaque hitem
+  el.querySelectorAll('.hitem').forEach(el=>attachSwipe(el));
+}
+
+function attachSwipe(el){
+  let startX=0,startY=0,dx=0,moved=false,locked=false;
+  const THRESHOLD=80;
+
+  el.addEventListener('touchstart',e=>{
+    startX=e.touches[0].clientX;
+    startY=e.touches[0].clientY;
+    dx=0;moved=false;locked=false;
+    el.classList.add('swiping');
+  },{passive:true});
+
+  el.addEventListener('touchmove',e=>{
+    const cx=e.touches[0].clientX;
+    const cy=e.touches[0].clientY;
+    const diffX=cx-startX;
+    const diffY=cy-startY;
+    // Si mouvement vertical dominant → ne pas swiper
+    if(!locked && Math.abs(diffY)>Math.abs(diffX)){locked=true;}
+    if(locked) return;
+    dx=Math.min(0,diffX); // uniquement gauche
+    moved=true;
+    el.style.transform=`translateX(${dx}px)`;
+    e.preventDefault();
+  },{passive:false});
+
+  el.addEventListener('touchend',()=>{
+    el.classList.remove('swiping');
+    if(!moved||locked){el.style.transform='';return;}
+    if(dx<-THRESHOLD){
+      // Confirmer suppression
+      el.style.transform=`translateX(-100%)`;
+      el.style.transition='transform .25s ease';
+      const hid=el.dataset.hid;
+      setTimeout(()=>{
+        deleteHistoryItem(hid);
+      },250);
+    } else {
+      el.style.transform='';
+    }
+  });
+}
+
+function deleteHistoryItem(hid){
+  db.history=db.history.filter(h=>h.id!==hid);
+  save();renderHistory();
+  toast('🗑️ Mouvement supprimé');
+}
+
+function clearHistory(){
+  if(!confirm('Vider tout l\'historique ?'))return;
+  db.history=[];save();renderHistory();
+}
+
+// ═══ COMP MODAL ═══
+function openAddComp(){
+  editCompId=null;
+  document.getElementById('mCompTitle').textContent='Nouveau compartiment';
+  document.getElementById('cEmoji').value='';document.getElementById('cName').value='';
+  openM('mComp');setTimeout(()=>document.getElementById('cName').focus(),320);
+}
+function openEditComp(id){
+  editCompId=id;const c=db.comps.find(x=>x.id===id);
+  document.getElementById('mCompTitle').textContent='Modifier le compartiment';
+  document.getElementById('cEmoji').value=c.emoji||'';document.getElementById('cName').value=c.name;
+  openM('mComp');
+}
+function saveComp(){
+  const name=document.getElementById('cName').value.trim();
+  const emoji=document.getElementById('cEmoji').value.trim()||'📦';
+  if(!name){toast('⚠️ Nom requis');return;}
+  if(editCompId){const c=db.comps.find(x=>x.id===editCompId);c.name=name;c.emoji=emoji;}
+  else db.comps.push({id:uid(),name,emoji,open:true});
+  save();closeM('mComp');renderAll();toast(editCompId?'✓ Compartiment modifié':'✓ Compartiment créé');
+}
+function delComp(id){
+  const c=db.comps.find(x=>x.id===id);
+  const ts=db.tiroirs.filter(t=>t.compId===id);
+  const its=db.items.filter(i=>ts.some(t=>t.id===i.tiroirId));
+  if(!confirm(`Supprimer "${c.name}" avec ${ts.length} tiroir(s) et ${its.length} pièce(s) ?`))return;
+  const tids=ts.map(t=>t.id);
+  db.comps=db.comps.filter(x=>x.id!==id);
+  db.tiroirs=db.tiroirs.filter(t=>t.compId!==id);
+  db.items=db.items.filter(i=>!tids.includes(i.tiroirId));
+  save();renderAll();toast('🗑️ Compartiment supprimé');
+}
+
+// ═══ TIROIR MODAL ═══
+function fillCompSel(selId,selCompId){
+  document.getElementById(selId).innerHTML=db.comps.map(c=>
+    `<option value="${c.id}" ${c.id===selCompId?'selected':''}>${c.emoji} ${c.name}</option>`).join('');
+}
+function openAddTiroir(compId){
+  editTiroirId=null;
+  document.getElementById('mTiroirTitle').textContent='Nouveau tiroir';
+  document.getElementById('tName').value='';fillCompSel('tComp',compId);
+  openM('mTiroir');setTimeout(()=>document.getElementById('tName').focus(),320);
+}
+function openEditTiroir(id){
+  editTiroirId=id;const t=db.tiroirs.find(x=>x.id===id);
+  document.getElementById('mTiroirTitle').textContent='Modifier le tiroir';
+  document.getElementById('tName').value=t.name;fillCompSel('tComp',t.compId);openM('mTiroir');
+}
+function saveTiroir(){
+  const name=document.getElementById('tName').value.trim();
+  const compId=document.getElementById('tComp').value;
+  if(!name){toast('⚠️ Nom requis');return;}
+  if(editTiroirId){const t=db.tiroirs.find(x=>x.id===editTiroirId);t.name=name;t.compId=compId;}
+  else db.tiroirs.push({id:uid(),name,compId,open:true});
+  save();closeM('mTiroir');renderAll();toast(editTiroirId?'✓ Tiroir modifié':'✓ Tiroir créé');
+}
+function delTiroir(id){
+  const t=db.tiroirs.find(x=>x.id===id);
+  const its=db.items.filter(i=>i.tiroirId===id);
+  if(!confirm(`Supprimer "${t.name}" et ses ${its.length} pièce(s) ?`))return;
+  db.tiroirs=db.tiroirs.filter(x=>x.id!==id);
+  db.items=db.items.filter(i=>i.tiroirId!==id);
+  save();renderAll();toast('🗑️ Tiroir supprimé');
+}
+
+// ═══ ITEM MODAL ═══
+function refreshTiroirSel(forceId){
+  const compId=document.getElementById('iComp').value;
+  const ts=db.tiroirs.filter(t=>t.compId===compId);
+  document.getElementById('iTiroir').innerHTML=ts.map(t=>
+    `<option value="${t.id}" ${t.id===forceId?'selected':''}>${t.name}</option>`).join('');
+}
+function openAddItem(tiroirId){
+  editItemId=null;
+  document.getElementById('mItemTitle').textContent='Nouvelle pièce';
+  ['iName','iRef'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('iQty').value='0';document.getElementById('iMin').value='1';
+  const t=db.tiroirs.find(x=>x.id===tiroirId);
+  fillCompSel('iComp',t?t.compId:db.comps[0]?.id);
+  refreshTiroirSel(tiroirId);
+  openM('mItem');setTimeout(()=>document.getElementById('iName').focus(),320);
+}
+function openEditItem(id){
+  editItemId=id;const item=db.items.find(i=>i.id===id);
+  const t=db.tiroirs.find(x=>x.id===item.tiroirId);
+  document.getElementById('mItemTitle').textContent='Modifier la pièce';
+  document.getElementById('iName').value=item.name;
+  document.getElementById('iRef').value=item.ref||'';
+  document.getElementById('iQty').value=item.qty;
+  document.getElementById('iMin').value=item.min;
+  fillCompSel('iComp',t?t.compId:'');
+  refreshTiroirSel(item.tiroirId);
+  openM('mItem');
+}
+function saveItem(){
+  const name=document.getElementById('iName').value.trim();
+  if(!name){toast('⚠️ Désignation requise');return;}
+  const data={name,ref:document.getElementById('iRef').value.trim(),
+    qty:parseInt(document.getElementById('iQty').value)||0,
+    min:parseInt(document.getElementById('iMin').value)||1,
+    tiroirId:document.getElementById('iTiroir').value};
+  if(editItemId){const it=db.items.find(i=>i.id===editItemId);Object.assign(it,data);}
+  else db.items.push({id:uid(),...data});
+  save();closeM('mItem');renderAll();toast(editItemId?'✓ Pièce modifiée':'✓ Pièce ajoutée');
+}
+function delItem(id){
+  const it=db.items.find(i=>i.id===id);
+  if(!confirm(`Supprimer "${it.name}" ?`))return;
+  db.items=db.items.filter(i=>i.id!==id);save();renderAll();toast('🗑️ Pièce supprimée');
+}
+
+// ═══ DETAIL ═══
+function showDetail(id){
+  const it=db.items.find(i=>i.id===id);
+  const t=db.tiroirs.find(x=>x.id===it.tiroirId);
+  const c=t?db.comps.find(x=>x.id===t.compId):null;
+  const lastRI=db.history.filter(h=>h.name===it.name&&h.ri&&h.delta<0).slice(0,3);
+  document.getElementById('detTitle').textContent=it.name;
+  const qc=it.qty<=0?'var(--danger)':it.qty<=it.min?'var(--warn)':'var(--ok)';
+  document.getElementById('detBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px">
+      <div style="background:var(--bg);border-radius:10px;padding:13px;text-align:center">
+        <div style="font-family:Rajdhani,sans-serif;font-size:34px;font-weight:700;color:${qc}">${it.qty}</div>
+        <div style="font-size:11px;color:var(--txt2)">En stock</div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:13px;text-align:center">
+        <div style="font-family:Rajdhani,sans-serif;font-size:34px;font-weight:700;color:var(--warn)">${it.min}</div>
+        <div style="font-size:11px;color:var(--txt2)">Seuil alerte</div>
+      </div>
+    </div>
+    <div style="font-size:13px;line-height:2.2;color:var(--txt2)">
+      ${it.ref?`<div>📎 <strong style="color:var(--txt)">Réf :</strong> ${it.ref}</div>`:''}
+      <div>📍 <strong style="color:var(--txt)">Emplacement :</strong> ${c?c.emoji+' '+c.name:''} › ${t?t.name:'—'}</div>
+    </div>
+    ${lastRI.length?`
+    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+      <div style="font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Derniers retraits</div>
+      ${lastRI.map(h=>{
+        const d=new Date(h.ts);
+        const fmt=d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'2-digit'});
+        return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span class="ri-tag">📋 ${h.ri}</span>
+          <span style="font-size:11px;color:var(--txt2)">${fmt}</span>
+          <span style="font-family:Rajdhani,sans-serif;font-weight:700;color:var(--danger)">${h.delta}</span>
+        </div>`;
+      }).join('')}
+    </div>`:''}`;
+  document.getElementById('detEditBtn').onclick=()=>{closeM('mDetail');openEditItem(id);};
+  openM('mDetail');
+}
+
+// ═══ CLOUD ═══
+function exportData(){
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download=`stock-camion-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();URL.revokeObjectURL(url);
+  document.getElementById('exportStatus').textContent='✓ Fichier exporté — sauvegardez-le dans Google Drive';
+  document.getElementById('exportStatus').className='stline ok';
+  toast('💾 Sauvegarde exportée');
+}
+function importData(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(!d.comps||!d.tiroirs||!d.items) throw 0;
+      if(!confirm('Restaurer cette sauvegarde ? Les données actuelles seront remplacées.'))return;
+      db=d;if(!db.history)db.history=[];save();renderAll();toast('✓ Sauvegarde restaurée');
+    }catch{toast('❌ Fichier invalide');}
+  };
+  r.readAsText(file);e.target.value='';
+}
+function resetAll(){
+  if(!confirm('Réinitialiser TOUTES les données ? Action irréversible.'))return;
+  db=defaultData();save();renderAll();toast('🔄 Données réinitialisées');
+}
+
+// ═══ MODALS ═══
+function openM(id){document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+function ovClose(e,id){if(e.target.id===id)closeM(id);}
+
+// ═══ TOAST ═══
+let _tt;
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ═══ INSTALL ═══
+if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.navigator.standalone)
+  document.getElementById('installBanner').classList.add('vis');
+
+renderAll();
+</script>
+</body>
+</html>
